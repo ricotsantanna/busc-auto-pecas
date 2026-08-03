@@ -29,9 +29,8 @@ export const mockModels: (CarModel & { vehicleType?: string })[] =
 export const mockVersions: CarVersion[] = vehicleData.versions.map((v: any) => ({
   id: v.id,
   modelId: v.modelId,
-  name: v.name,
-  yearStart: v.yearStart,
-  yearEnd: v.yearEnd,
+  year: v.yearStart,
+  versionName: v.name,
   engine: v.engine ?? null,
   createdAt: now,
 }));

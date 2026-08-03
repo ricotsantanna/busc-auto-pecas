@@ -27,10 +27,9 @@ type Brand = { id: string; name: string; slug: string };
 type CarModel = { id: string; name: string; brandId: string };
 type CarVersion = {
   id: string;
-  name: string;
+  versionName: string;
   modelId: string;
-  yearStart: number;
-  yearEnd: number;
+  year: number;
   engine: string | null;
 };
 type Category = {
@@ -356,7 +355,7 @@ export default function HomePage() {
                     </option>
                     {versions.map((v) => (
                       <option key={v.id} value={v.id}>
-                        {v.name} — {v.yearStart}/{v.yearEnd}
+                        {v.year} — {v.versionName} {v.engine}
                       </option>
                     ))}
                   </select>

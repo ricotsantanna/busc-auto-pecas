@@ -42,6 +42,8 @@ function mp(
     categoryId,
     description: null,
     imageUrl: null,
+    manufacturer: "Genérico",
+    position: "N/D",
     createdAt: new Date(),
     updatedAt: new Date(),
     categoryName,
@@ -268,13 +270,13 @@ export function generateSearchResults(
         ? {
             brand: brand.name,
             model: model.name,
-            version: `${version.name} (${version.yearStart}–${version.yearEnd})`,
+            version: `${version.versionName} (${version.year})`,
           }
         : brand
         ? {
             brand: brand.name,
             model: model?.name ?? "",
-            version: version?.name ?? "",
+            version: version?.versionName ?? "",
           }
         : null,
     query,

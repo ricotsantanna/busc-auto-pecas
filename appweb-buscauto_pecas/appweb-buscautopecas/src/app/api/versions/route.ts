@@ -17,7 +17,7 @@ export async function GET(req: NextRequest) {
         .select()
         .from(schema.carVersions)
         .where(eq(schema.carVersions.modelId, modelId))
-        .orderBy(asc(schema.carVersions.yearStart));
+        .orderBy(asc(schema.carVersions.year));
       return rows.length ? rows : mockVersions.filter((v) => v.modelId === modelId);
     },
     () => mockVersions.filter((v) => v.modelId === modelId)
