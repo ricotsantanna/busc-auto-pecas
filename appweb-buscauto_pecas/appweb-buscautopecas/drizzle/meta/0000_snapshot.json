@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "0680e1c1-6c16-4ede-bf7f-6fcd3887cbc9",
+  "id": "7939d206-8a0e-4581-9683-921ddbf8f45d",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "brands": {
@@ -158,23 +158,16 @@
           "notNull": true,
           "autoincrement": false
         },
-        "name": {
-          "name": "name",
+        "year": {
+          "name": "year",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "version_name": {
+          "name": "version_name",
           "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "year_start": {
-          "name": "year_start",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "year_end": {
-          "name": "year_end",
-          "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
@@ -183,7 +176,7 @@
           "name": "engine",
           "type": "text",
           "primaryKey": false,
-          "notNull": false,
+          "notNull": true,
           "autoincrement": false
         },
         "created_at": {
@@ -206,8 +199,7 @@
         "car_versions_year_idx": {
           "name": "car_versions_year_idx",
           "columns": [
-            "year_start",
-            "year_end"
+            "year"
           ],
           "isUnique": false
         }
@@ -302,6 +294,13 @@
           "notNull": true,
           "autoincrement": false
         },
+        "manufacturer": {
+          "name": "manufacturer",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
         "manufacturer_code": {
           "name": "manufacturer_code",
           "type": "text",
@@ -315,6 +314,14 @@
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
+        },
+        "position": {
+          "name": "position",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false,
+          "default": "'N/A'"
         },
         "description": {
           "name": "description",

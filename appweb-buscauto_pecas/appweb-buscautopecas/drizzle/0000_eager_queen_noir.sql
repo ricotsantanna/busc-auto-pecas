@@ -22,16 +22,15 @@ CREATE INDEX `car_models_brand_idx` ON `car_models` (`brand_id`);--> statement-b
 CREATE TABLE `car_versions` (
 	`id` text PRIMARY KEY NOT NULL,
 	`model_id` text NOT NULL,
-	`name` text NOT NULL,
-	`year_start` integer NOT NULL,
-	`year_end` integer NOT NULL,
-	`engine` text,
+	`year` integer NOT NULL,
+	`version_name` text NOT NULL,
+	`engine` text NOT NULL,
 	`created_at` integer DEFAULT (unixepoch()) NOT NULL,
 	FOREIGN KEY (`model_id`) REFERENCES `car_models`(`id`) ON UPDATE no action ON DELETE cascade
 );
 --> statement-breakpoint
 CREATE INDEX `car_versions_model_idx` ON `car_versions` (`model_id`);--> statement-breakpoint
-CREATE INDEX `car_versions_year_idx` ON `car_versions` (`year_start`,`year_end`);--> statement-breakpoint
+CREATE INDEX `car_versions_year_idx` ON `car_versions` (`year`);--> statement-breakpoint
 CREATE TABLE `categories` (
 	`id` text PRIMARY KEY NOT NULL,
 	`name` text NOT NULL,
@@ -44,8 +43,10 @@ CREATE UNIQUE INDEX `categories_slug_unique` ON `categories` (`slug`);--> statem
 CREATE TABLE `master_parts` (
 	`id` text PRIMARY KEY NOT NULL,
 	`name` text NOT NULL,
+	`manufacturer` text NOT NULL,
 	`manufacturer_code` text NOT NULL,
 	`category_id` text NOT NULL,
+	`position` text DEFAULT 'N/A',
 	`description` text,
 	`image_url` text,
 	`created_at` integer DEFAULT (unixepoch()) NOT NULL,

@@ -83,15 +83,14 @@ export const carVersions = sqliteTable(
     modelId: text("model_id")
       .notNull()
       .references(() => carModels.id, { onDelete: "cascade" }),
-    name: text("name").notNull(), // ex.: "1.0 Fire 2005-2015"
-    yearStart: integer("year_start").notNull(),
-    yearEnd: integer("year_end").notNull(),
-    engine: text("engine"), // ex.: "1.0 8v Flex"
+    year: integer("year").notNull(), // ex.: 2020
+    versionName: text("version_name").notNull(), // ex.: "LTZ"
+    engine: text("engine").notNull(), // ex.: "1.0 Turbo"
     createdAt: createdAt(),
   },
   (t) => ({
     modelIdx: index("car_versions_model_idx").on(t.modelId),
-    yearIdx: index("car_versions_year_idx").on(t.yearStart, t.yearEnd),
+    yearIdx: index("car_versions_year_idx").on(t.year),
   })
 );
 
@@ -120,10 +119,12 @@ export const masterParts = sqliteTable(
   {
     id: uuid(),
     name: text("name").notNull(),
+    manufacturer: text("manufacturer").notNull(), // ex: Bosch, Tecfil
     manufacturerCode: text("manufacturer_code").notNull(),
     categoryId: text("category_id")
       .notNull()
       .references(() => categories.id, { onDelete: "restrict" }),
+    position: text("position").default("N/A"), // ex: Dianteira, Traseira, Esquerda, Direita, N/A
     description: text("description"),
     imageUrl: text("image_url"),
     createdAt: createdAt(),
