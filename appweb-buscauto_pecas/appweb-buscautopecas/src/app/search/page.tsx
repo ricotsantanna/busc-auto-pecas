@@ -21,6 +21,15 @@ import {
   Sparkles,
 } from "lucide-react";
 import { localOffersAsSearchOffers } from "@/lib/local-inventory";
+import {
+  Drawer,
+  DrawerClose,
+  DrawerContent,
+  DrawerFooter,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerTrigger,
+} from "@/components/ui/drawer";
 
 type Offer = {
   id: string;
@@ -69,6 +78,94 @@ function buildWhatsAppUrl(offer: Offer) {
     `Preço anunciado: *${formatBRL(offer.price)}*\n\n` +
     `Ainda está disponível?`;
   return `https://wa.me/${offer.storeWhatsapp}?text=${encodeURIComponent(msg)}`;
+}
+
+function FilterOptions({
+  condition,
+  setCondition,
+  city,
+  setCity,
+  onlyStock,
+  setOnlyStock,
+  cities,
+}: {
+  condition: ConditionFilter;
+  setCondition: (c: ConditionFilter) => void;
+  city: string;
+  setCity: (c: string) => void;
+  onlyStock: boolean;
+  setOnlyStock: (s: boolean) => void;
+  cities: string[];
+}) {
+  return (
+    <>
+      {/* Condição */}
+      <div className="mb-5">
+        <div className="text-xs font-semibold uppercase text-brand-muted mb-2">Condição</div>
+        <div className="space-y-2">
+          {(
+            [
+              { key: "ALL", label: "Todas", icon: <Package className="h-4 w-4" /> },
+              { key: "NOVO", label: "Apenas Novas", icon: <BadgeCheck className="h-4 w-4 text-emerald-600" /> },
+              { key: "USADO", label: "Apenas Usadas", icon: <History className="h-4 w-4 text-amber-600" /> },
+            ] as { key: ConditionFilter; label: string; icon: JSX.Element }[]
+          ).map((opt) => (
+            <label
+              key={opt.key}
+              className={`flex items-center gap-2 rounded-lg px-3 py-2 cursor-pointer border text-sm transition ${
+                condition === opt.key
+                  ? "border-brand-primary bg-blue-50 text-brand-primary font-semibold"
+                  : "border-slate-200 hover:bg-slate-50 text-brand-muted"
+              }`}
+            >
+              <input
+                type="radio"
+                name="cond"
+                className="sr-only"
+                checked={condition === opt.key}
+                onChange={() => setCondition(opt.key)}
+              />
+              {opt.icon}
+              <span>{opt.label}</span>
+            </label>
+          ))}
+        </div>
+      </div>
+
+      {/* Cidade */}
+      <div className="mb-5">
+        <div className="text-xs font-semibold uppercase text-brand-muted mb-2">Cidade</div>
+        <select className="field h-10 w-full" value={city} onChange={(e) => setCity(e.target.value)}>
+          <option value="ALL">Todas as cidades</option>
+          {cities.map((c) => (
+            <option key={c} value={c}>{c}</option>
+          ))}
+        </select>
+      </div>
+
+      {/* Estoque */}
+      <label className="flex items-center justify-between gap-2 rounded-lg px-3 py-2 border border-slate-200 cursor-pointer hover:bg-slate-50">
+        <span className="text-sm text-brand-ink font-medium">Só em estoque</span>
+        <span
+          className={`relative inline-flex h-5 w-9 items-center rounded-full transition ${
+            onlyStock ? "bg-brand-primary" : "bg-slate-300"
+          }`}
+        >
+          <span
+            className={`inline-block h-4 w-4 rounded-full bg-white transition ${
+              onlyStock ? "translate-x-4" : "translate-x-1"
+            }`}
+          />
+        </span>
+        <input
+          type="checkbox"
+          className="sr-only"
+          checked={onlyStock}
+          onChange={(e) => setOnlyStock(e.target.checked)}
+        />
+      </label>
+    </>
+  );
 }
 
 function SearchInner() {
@@ -255,101 +352,61 @@ function SearchInner() {
             </div>
           )}
         </div>
+
+        {/* MOBILE FILTERS BUTTON */}
+        <div className="md:hidden border-t border-slate-200 p-4 bg-slate-50/50">
+          <Drawer>
+            <DrawerTrigger asChild>
+              <button className="w-full flex items-center justify-center gap-2 bg-white border border-slate-300 text-brand-ink rounded-xl h-11 font-semibold shadow-sm active:bg-slate-50 transition">
+                <Filter className="h-4 w-4" /> Filtrar resultados
+              </button>
+            </DrawerTrigger>
+            <DrawerContent>
+              <DrawerHeader>
+                <DrawerTitle>Filtros</DrawerTitle>
+              </DrawerHeader>
+              <div className="p-4 px-6 overflow-y-auto">
+                <FilterOptions
+                  condition={condition}
+                  setCondition={setCondition}
+                  city={city}
+                  setCity={setCity}
+                  onlyStock={onlyStock}
+                  setOnlyStock={setOnlyStock}
+                  cities={data?.meta.cities ?? []}
+                />
+              </div>
+              <DrawerFooter className="px-6 pb-8">
+                <DrawerClose asChild>
+                  <button className="btn-primary h-12 w-full text-base">
+                    Ver resultados ({filteredOffers.length})
+                  </button>
+                </DrawerClose>
+              </DrawerFooter>
+            </DrawerContent>
+          </Drawer>
+        </div>
       </div>
 
       {/* body */}
       <main className="container py-6">
         <div className="grid md:grid-cols-[280px_1fr] gap-6">
           {/* SIDEBAR FILTROS */}
-          <aside className="md:sticky md:top-6 h-fit space-y-4">
+          <aside className="hidden md:block md:sticky md:top-6 h-fit space-y-4">
             <div className="bg-white ring-1 ring-slate-200 rounded-2xl p-5">
               <div className="flex items-center gap-2 text-brand-ink font-semibold mb-4">
                 <Filter className="h-4 w-4" /> Filtros
               </div>
 
-              {/* Condição */}
-              <div className="mb-5">
-                <div className="text-xs font-semibold uppercase text-brand-muted mb-2">
-                  Condição
-                </div>
-                <div className="space-y-2">
-                  {(
-                    [
-                      { key: "ALL", label: "Todas", icon: <Package className="h-4 w-4" /> },
-                      {
-                        key: "NOVO",
-                        label: "Apenas Novas",
-                        icon: <BadgeCheck className="h-4 w-4 text-emerald-600" />,
-                      },
-                      {
-                        key: "USADO",
-                        label: "Apenas Usadas",
-                        icon: <History className="h-4 w-4 text-amber-600" />,
-                      },
-                    ] as { key: ConditionFilter; label: string; icon: JSX.Element }[]
-                  ).map((opt) => (
-                    <label
-                      key={opt.key}
-                      className={`flex items-center gap-2 rounded-lg px-3 py-2 cursor-pointer border text-sm transition ${
-                        condition === opt.key
-                          ? "border-brand-primary bg-blue-50 text-brand-primary font-semibold"
-                          : "border-slate-200 hover:bg-slate-50 text-brand-muted"
-                      }`}
-                    >
-                      <input
-                        type="radio"
-                        name="cond"
-                        className="sr-only"
-                        checked={condition === opt.key}
-                        onChange={() => setCondition(opt.key)}
-                      />
-                      {opt.icon}
-                      <span>{opt.label}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-
-              {/* Cidade */}
-              <div className="mb-5">
-                <div className="text-xs font-semibold uppercase text-brand-muted mb-2">
-                  Cidade
-                </div>
-                <select
-                  className="field h-10"
-                  value={city}
-                  onChange={(e) => setCity(e.target.value)}
-                >
-                  <option value="ALL">Todas as cidades</option>
-                  {data?.meta.cities.map((c) => (
-                    <option key={c} value={c}>
-                      {c}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Estoque */}
-              <label className="flex items-center justify-between gap-2 rounded-lg px-3 py-2 border border-slate-200 cursor-pointer hover:bg-slate-50">
-                <span className="text-sm text-brand-ink font-medium">Só em estoque</span>
-                <span
-                  className={`relative inline-flex h-5 w-9 items-center rounded-full transition ${
-                    onlyStock ? "bg-brand-primary" : "bg-slate-300"
-                  }`}
-                >
-                  <span
-                    className={`inline-block h-4 w-4 rounded-full bg-white transition ${
-                      onlyStock ? "translate-x-4" : "translate-x-1"
-                    }`}
-                  />
-                </span>
-                <input
-                  type="checkbox"
-                  className="sr-only"
-                  checked={onlyStock}
-                  onChange={(e) => setOnlyStock(e.target.checked)}
-                />
-              </label>
+              <FilterOptions
+                condition={condition}
+                setCondition={setCondition}
+                city={city}
+                setCity={setCity}
+                onlyStock={onlyStock}
+                setOnlyStock={setOnlyStock}
+                cities={data?.meta.cities ?? []}
+              />
             </div>
 
             {/* Card educativo */}
@@ -495,24 +552,27 @@ function OfferCard({
         </div>
 
         {/* Preço + CTA */}
-        <div className="md:w-64 flex md:flex-col justify-between md:items-end items-center gap-3">
-          <div className="text-right">
-            <div className="text-2xl md:text-3xl font-extrabold text-brand-ink leading-none">
-              {formatBRL(offer.price)}
-            </div>
-            {savingsPct >= 5 && (
-              <div className="text-xs mt-1 font-semibold text-emerald-600">
-                Economia de {savingsPct}% vs. média
+        <div className="md:w-64 flex flex-col justify-between md:items-end items-start gap-4 mt-2 md:mt-0 pt-4 md:pt-0 border-t border-slate-100 md:border-none">
+          <div className="text-left md:text-right w-full flex items-center justify-between md:block">
+            <div className="text-sm font-semibold text-brand-muted md:hidden">Preço à vista</div>
+            <div className="text-right">
+              <div className="text-3xl font-extrabold text-brand-ink leading-none">
+                {formatBRL(offer.price)}
               </div>
-            )}
+              {savingsPct >= 5 && (
+                <div className="text-xs mt-1 font-semibold text-emerald-600">
+                  Economia de {savingsPct}% vs. média
+                </div>
+              )}
+            </div>
           </div>
           <a
             href={buildWhatsAppUrl(offer)}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center justify-center gap-2 h-11 px-5 rounded-lg bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700 text-white font-semibold shadow-sm transition w-full md:w-auto"
+            className="inline-flex items-center justify-center gap-2 h-12 md:h-11 px-5 rounded-xl md:rounded-lg bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700 text-white font-semibold shadow-sm transition w-full md:w-auto text-lg md:text-base"
           >
-            <MessageCircle className="h-4 w-4" /> WhatsApp
+            <MessageCircle className="h-5 md:h-4 w-5 md:w-4" /> WhatsApp
           </a>
         </div>
       </div>
