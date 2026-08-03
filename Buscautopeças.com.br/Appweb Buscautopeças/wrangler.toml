@@ -1,0 +1,15 @@
+# Cloudflare Pages configuration for BuscAutoPeças
+name = "buscautopecas"
+compatibility_date = "2025-06-01"
+compatibility_flags = ["nodejs_compat"]
+pages_build_output_dir = ".vercel/output/static"
+
+# D1 Database binding
+[[d1_databases]]
+binding = "DB"
+database_name = "buscautopecas-db"
+database_id = "486fccfe-bb75-476e-9caf-539b54a6aac0"
+
+# Local development binding (for wrangler pages dev)
+# Run: npx wrangler d1 create buscautopecas-db  -> put the id above
+# Migrations: npx drizzle-kit generate && npx wrangler d1 execute buscautopecas-db --file=./drizzle/xxx.sql

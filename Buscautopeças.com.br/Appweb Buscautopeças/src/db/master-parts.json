@@ -1,0 +1,608 @@
+{
+  "categories": [
+    {
+      "id": "cat-freios",
+      "name": "Freios",
+      "slug": "freios",
+      "icon": "Disc"
+    },
+    {
+      "id": "cat-suspensao",
+      "name": "Suspensão e Direção",
+      "slug": "suspensao-e-direcao",
+      "icon": "Waves"
+    },
+    {
+      "id": "cat-motor",
+      "name": "Motor e Componentes",
+      "slug": "motor",
+      "icon": "Cog"
+    },
+    {
+      "id": "cat-ignicao",
+      "name": "Ignição e Injeção",
+      "slug": "ignicao-e-injecao",
+      "icon": "Zap"
+    },
+    {
+      "id": "cat-filtros",
+      "name": "Filtros e Óleos",
+      "slug": "filtros",
+      "icon": "Filter"
+    },
+    {
+      "id": "cat-transmissao",
+      "name": "Transmissão e Embreagem",
+      "slug": "transmissao",
+      "icon": "GitBranch"
+    },
+    {
+      "id": "cat-iluminacao",
+      "name": "Iluminação e Faróis",
+      "slug": "iluminacao",
+      "icon": "Lightbulb"
+    },
+    {
+      "id": "cat-autopropelidos",
+      "name": "Autopropelidos e Scooters",
+      "slug": "autopropelidos-e-scooters",
+      "icon": "Zap"
+    }
+  ],
+  "masterParts": [
+    {
+      "id": "mp-001",
+      "name": "Pastilha de Freio Dianteira",
+      "manufacturerCode": "N-2081",
+      "manufacturer": "Cobreq",
+      "categoryId": "cat-freios",
+      "description": "Jogo de pastilhas de freio dianteiro cerâmica/orgânica de alta durabilidade e frenagem silenciosa.",
+      "imageUrl": "https://images.unsplash.com/photo-1580273916550-e323be2ae537?auto=format&fit=crop&w=400&q=80"
+    },
+    {
+      "id": "mp-002",
+      "name": "Disco de Freio Ventilado Dianteiro (Par)",
+      "manufacturerCode": "HF-02B",
+      "manufacturer": "Fremax",
+      "categoryId": "cat-freios",
+      "description": "Par de discos de freio dianteiros ventilados com liga de alto carbono anti-ruído.",
+      "imageUrl": "https://images.unsplash.com/photo-1600792860459-d080ec374665?auto=format&fit=crop&w=400&q=80"
+    },
+    {
+      "id": "mp-003",
+      "name": "Sapata / Lona de Freio Traseira",
+      "manufacturerCode": "0986BB0010",
+      "manufacturer": "Bosch",
+      "categoryId": "cat-freios",
+      "description": "Jogo de sapatas de freio traseiro com lonas coladas de alta eficiência mecânica.",
+      "imageUrl": null
+    },
+    {
+      "id": "mp-004",
+      "name": "Amortecedor Dianteiro Turbogás",
+      "manufacturerCode": "GP32488",
+      "manufacturer": "Cofap",
+      "categoryId": "cat-suspensao",
+      "description": "Amortecedor dianteiro pressurizado a gás (Turbogás) Cofap com garantia de fábrica.",
+      "imageUrl": null
+    },
+    {
+      "id": "mp-005",
+      "name": "Amortecedor Traseiro OESpectrum",
+      "manufacturerCode": "372005SP",
+      "manufacturer": "Monroe",
+      "categoryId": "cat-suspensao",
+      "description": "Amortecedor traseiro Monroe OESpectrum pressurizado para máximo conforto e estabilidade.",
+      "imageUrl": null
+    },
+    {
+      "id": "mp-006",
+      "name": "Kits de Batente e Coifa do Amortecedor",
+      "manufacturerCode": "NK-7042",
+      "manufacturer": "Nakata",
+      "categoryId": "cat-suspensao",
+      "description": "Kit completo com batentes de poliuretano e coifa de proteção contra poeira e lama.",
+      "imageUrl": null
+    },
+    {
+      "id": "mp-007",
+      "name": "Bobina de Ignição Eletrônica",
+      "manufacturerCode": "BI0011MM",
+      "manufacturer": "Magneti Marelli",
+      "categoryId": "cat-ignicao",
+      "description": "Bobina de ignição multiponto Magneti Marelli de alta tensão e faísca constante.",
+      "imageUrl": null
+    },
+    {
+      "id": "mp-008",
+      "name": "Jogo de Velas de Ignição Iridium",
+      "manufacturerCode": "BKR6EIX",
+      "manufacturer": "NGK",
+      "categoryId": "cat-ignicao",
+      "description": "Jogo com 4 velas de ignição NGK Iridium IX para maior economia de combustível e partida rápida.",
+      "imageUrl": null
+    },
+    {
+      "id": "mp-009",
+      "name": "Jogo de Cabos de Vela de Ignição",
+      "manufacturerCode": "SC-G63",
+      "manufacturer": "NGK",
+      "categoryId": "cat-ignicao",
+      "description": "Cabos de ignição de silicone de alta isolação contra rádio-interferência e fuga de corrente.",
+      "imageUrl": null
+    },
+    {
+      "id": "mp-010",
+      "name": "Bico Injetor de Combustível Multi-Ponto",
+      "manufacturerCode": "0280156086",
+      "manufacturer": "Bosch",
+      "categoryId": "cat-ignicao",
+      "description": "Válvula injetora de combustível Bosch Flex / Gasolina de alta precisão de pulverização.",
+      "imageUrl": null
+    },
+    {
+      "id": "mp-011",
+      "name": "Kit Correia Dentada + Tensor",
+      "manufacturerCode": "KS101",
+      "manufacturer": "Continental / Dayco",
+      "categoryId": "cat-motor",
+      "description": "Kit completo de distribuição com correia dentada reforçada em HNBR e polia tensional.",
+      "imageUrl": null
+    },
+    {
+      "id": "mp-012",
+      "name": "Filtro de Óleo do Motor",
+      "manufacturerCode": "W712/53",
+      "manufacturer": "Mann-Filter",
+      "categoryId": "cat-filtros",
+      "description": "Filtro de óleo blindado Mann-Filter com válvula anti-retorno para proteção do motor.",
+      "imageUrl": null
+    },
+    {
+      "id": "mp-013",
+      "name": "Filtro de Ar do Motor",
+      "manufacturerCode": "C29013",
+      "manufacturer": "Mann-Filter",
+      "categoryId": "cat-filtros",
+      "description": "Elemento filtrante de ar em papel microfibrado para reter 99.9% de impurezas.",
+      "imageUrl": null
+    },
+    {
+      "id": "mp-014",
+      "name": "Kit de Embreagem Completo (Platô + Disco + Rolamento)",
+      "manufacturerCode": "620312000",
+      "manufacturer": "LUK / Sachs",
+      "categoryId": "cat-transmissao",
+      "description": "Kit de embreagem reforçado LUK para trocas suaves de marcha e máxima durabilidade.",
+      "imageUrl": null
+    },
+    {
+      "id": "mp-015",
+      "name": "Farol Principal Dianteiro Máscara Negra",
+      "manufacturerCode": "043210",
+      "manufacturer": "Arteb / Arteb-Orgus",
+      "categoryId": "cat-iluminacao",
+      "description": "Farol dianteiro foco duplo com máscara negra de alta transparência policarbonato.",
+      "imageUrl": null
+    },
+    {
+      "id": "mp-auto-001",
+      "name": "Bateria de Lítio 60V 20Ah Removível (Mala)",
+      "manufacturerCode": "BAT-60V20AH",
+      "manufacturer": "Universal / Importada",
+      "categoryId": "cat-autopropelidos",
+      "description": "Bateria de Lítio 60V 20Ah formato maleta com conector plug & play para scooters e autopropelidos elétricos.",
+      "imageUrl": null
+    },
+    {
+      "id": "mp-auto-002",
+      "name": "Controlador de Motor Brushless 48V/60V 1000W-1500W",
+      "manufacturerCode": "CTRL-60V1500W",
+      "manufacturer": "Universal / Importada",
+      "categoryId": "cat-autopropelidos",
+      "description": "Módulo controlador de motor de alta eficiência 12-tubos 60V 1500W com onda senoidal.",
+      "imageUrl": null
+    },
+    {
+      "id": "mp-auto-003",
+      "name": "Pneu 10x2.50 Tubeless Sem Câmara",
+      "manufacturerCode": "PNEU-10X250",
+      "manufacturer": "CST / Chaoyang",
+      "categoryId": "cat-autopropelidos",
+      "description": "Pneu 10x2.50 sem câmara de ar reforçado contra furos para patinetes e scooters elétricas.",
+      "imageUrl": null
+    },
+    {
+      "id": "mp-auto-004",
+      "name": "Acelerador de Manopla Universal com Chave e Voltímetro",
+      "manufacturerCode": "ACEL-DISP60V",
+      "manufacturer": "Universal",
+      "categoryId": "cat-autopropelidos",
+      "description": "Manopla com acelerador progressivo, ignição por chave e display digital de tensão de bateria.",
+      "imageUrl": null
+    },
+    {
+      "id": "mp-auto-005",
+      "name": "Jogo de Pastilhas de Freio a Disco Hidráulico de Scooter",
+      "manufacturerCode": "PAST-SCOOTER-E",
+      "manufacturer": "Universal",
+      "categoryId": "cat-autopropelidos",
+      "description": "Jogo de pastilhas de freio sinterizadas para pinças de freio a disco elétrico.",
+      "imageUrl": null
+    },
+    {
+      "id": "part-f7c595eb",
+      "categoryId": "cat-freios",
+      "name": "Disco de Freio Sólido",
+      "brand": "Fremax",
+      "code": "FRE-7805"
+    },
+    {
+      "id": "part-385868e9",
+      "categoryId": "cat-freios",
+      "name": "Lona de Freio",
+      "brand": "Fras-le",
+      "code": "FRA-9303"
+    },
+    {
+      "id": "part-ea8d7220",
+      "categoryId": "cat-freios",
+      "name": "Cilindro Mestre",
+      "brand": "Bosch",
+      "code": "BOS-8618"
+    },
+    {
+      "id": "part-02837541",
+      "categoryId": "cat-freios",
+      "name": "Fluido de Freio DOT4",
+      "brand": "Varga",
+      "code": "VAR-3528"
+    },
+    {
+      "id": "part-e6e460cf",
+      "categoryId": "cat-suspensao",
+      "name": "Amortecedor Dianteiro",
+      "brand": "Monroe",
+      "code": "MON-4136"
+    },
+    {
+      "id": "part-efc814c9",
+      "categoryId": "cat-suspensao",
+      "name": "Amortecedor Traseiro",
+      "brand": "Cofap",
+      "code": "COF-4119"
+    },
+    {
+      "id": "part-51a0857f",
+      "categoryId": "cat-suspensao",
+      "name": "Mola Esportiva",
+      "brand": "Aliperti",
+      "code": "ALI-4788"
+    },
+    {
+      "id": "part-8f6f3580",
+      "categoryId": "cat-suspensao",
+      "name": "Bandeja de Suspensão",
+      "brand": "Perfect",
+      "code": "PER-1242"
+    },
+    {
+      "id": "part-3cce7284",
+      "categoryId": "cat-suspensao",
+      "name": "Terminal de Direção",
+      "brand": "Nakata",
+      "code": "NAK-2069"
+    },
+    {
+      "id": "part-4dea2cf7",
+      "categoryId": "cat-motor",
+      "name": "Correia Dentada",
+      "brand": "Gates",
+      "code": "GAT-2931"
+    },
+    {
+      "id": "part-3ff6ebf7",
+      "categoryId": "cat-motor",
+      "name": "Tensionador",
+      "brand": "Dayco",
+      "code": "DAY-9804"
+    },
+    {
+      "id": "part-0694c2b2",
+      "categoryId": "cat-motor",
+      "name": "Junta do Cabeçote",
+      "brand": "Taranto",
+      "code": "TAR-3154"
+    },
+    {
+      "id": "part-e9ebb177",
+      "categoryId": "cat-motor",
+      "name": "Bomba D Água",
+      "brand": "Urba",
+      "code": "URB-1274"
+    },
+    {
+      "id": "part-9852fefb",
+      "categoryId": "cat-motor",
+      "name": "Pistão Motor",
+      "brand": "Metal Leve",
+      "code": "MET-1281"
+    },
+    {
+      "id": "part-c3dc52fc",
+      "categoryId": "cat-motor",
+      "name": "Anel de Segmento",
+      "brand": "Mahle",
+      "code": "MAH-2951"
+    },
+    {
+      "id": "part-de2374f2",
+      "categoryId": "cat-ignicao",
+      "name": "Vela de Ignição",
+      "brand": "NGK",
+      "code": "NGK-3192"
+    },
+    {
+      "id": "part-ac6b4b70",
+      "categoryId": "cat-ignicao",
+      "name": "Cabo de Vela",
+      "brand": "Bosch",
+      "code": "BOS-6454"
+    },
+    {
+      "id": "part-86a52806",
+      "categoryId": "cat-ignicao",
+      "name": "Bobina de Ignição",
+      "brand": "Magneti Marelli",
+      "code": "MAG-6013"
+    },
+    {
+      "id": "part-ebba54a6",
+      "categoryId": "cat-ignicao",
+      "name": "Bomba de Combustível",
+      "brand": "Weber",
+      "code": "WEB-6898"
+    },
+    {
+      "id": "part-eb1ce9a1",
+      "categoryId": "cat-ignicao",
+      "name": "Bico Injetor",
+      "brand": "Denso",
+      "code": "DEN-6327"
+    },
+    {
+      "id": "part-2fcfaa6b",
+      "categoryId": "cat-filtros",
+      "name": "Filtro de Óleo",
+      "brand": "Tecfil",
+      "code": "TEC-6051"
+    },
+    {
+      "id": "part-d7de9e6e",
+      "categoryId": "cat-filtros",
+      "name": "Filtro de Ar",
+      "brand": "Fram",
+      "code": "FRA-3691"
+    },
+    {
+      "id": "part-2472bb57",
+      "categoryId": "cat-filtros",
+      "name": "Filtro de Combustível",
+      "brand": "Mann",
+      "code": "MAN-3955"
+    },
+    {
+      "id": "part-6864f1e7",
+      "categoryId": "cat-filtros",
+      "name": "Filtro de Cabine",
+      "brand": "Wega",
+      "code": "WEG-7407"
+    },
+    {
+      "id": "part-97d27b60",
+      "categoryId": "cat-filtros",
+      "name": "Óleo Sintético 5W40",
+      "brand": "Castrol",
+      "code": "CAS-8704"
+    },
+    {
+      "id": "part-853762a3",
+      "categoryId": "cat-transmissao",
+      "name": "Kit Embreagem",
+      "brand": "Luk",
+      "code": "LUK-9333"
+    },
+    {
+      "id": "part-b2724bba",
+      "categoryId": "cat-transmissao",
+      "name": "Cabo de Embreagem",
+      "brand": "Fania",
+      "code": "FAN-9452"
+    },
+    {
+      "id": "part-96576541",
+      "categoryId": "cat-transmissao",
+      "name": "Óleo de Câmbio",
+      "brand": "Motul",
+      "code": "MOT-3815"
+    },
+    {
+      "id": "part-ac425b22",
+      "categoryId": "cat-transmissao",
+      "name": "Semi-Eixo",
+      "brand": "Nakata",
+      "code": "NAK-7819"
+    },
+    {
+      "id": "part-f64d7a19",
+      "categoryId": "cat-transmissao",
+      "name": "Rolamento de Roda",
+      "brand": "SKF",
+      "code": "SKF-9070"
+    },
+    {
+      "id": "part-92276871",
+      "categoryId": "cat-iluminacao",
+      "name": "Farol Principal",
+      "brand": "Arteb",
+      "code": "ART-2867"
+    },
+    {
+      "id": "part-f4065d25",
+      "categoryId": "cat-iluminacao",
+      "name": "Lanterna Traseira",
+      "brand": "Cibié",
+      "code": "CIB-8431"
+    },
+    {
+      "id": "part-ece7954e",
+      "categoryId": "cat-iluminacao",
+      "name": "Lâmpada Super Branca H4",
+      "brand": "Osram",
+      "code": "OSR-8337"
+    },
+    {
+      "id": "part-c4933b71",
+      "categoryId": "cat-iluminacao",
+      "name": "Lâmpada LED",
+      "brand": "Philips",
+      "code": "PHI-3892"
+    },
+    {
+      "id": "part-9f0426b6",
+      "categoryId": "cat-iluminacao",
+      "name": "Pisca Lateral",
+      "brand": "Depo",
+      "code": "DEP-3077"
+    },
+    {
+      "id": "part-a10f4b2e",
+      "categoryId": "cat-autopropelidos",
+      "name": "Módulo Controlador 48V",
+      "brand": "Importado",
+      "code": "IMP-8144"
+    },
+    {
+      "id": "part-50f4ad2b",
+      "categoryId": "cat-autopropelidos",
+      "name": "Motor Brushless 1000W",
+      "brand": "Xingling",
+      "code": "XIN-7128"
+    },
+    {
+      "id": "part-16793631",
+      "categoryId": "cat-autopropelidos",
+      "name": "Acelerador Punho",
+      "brand": "Gloov",
+      "code": "GLO-6891"
+    },
+    {
+      "id": "part-0556ad35",
+      "categoryId": "cat-autopropelidos",
+      "name": "Manete de Freio",
+      "brand": "Voltz",
+      "code": "VOL-6126"
+    },
+    {
+      "id": "part-70b0ead5",
+      "categoryId": "cat-autopropelidos",
+      "name": "Pneu Sólido 8.5",
+      "brand": "Importado",
+      "code": "IMP-2160"
+    },
+    {
+      "id": "part-9b6ce34f",
+      "categoryId": "cat-autopropelidos",
+      "name": "Bateria Lítio 48V 15Ah",
+      "brand": "Watts",
+      "code": "WAT-8029"
+    },
+    {
+      "id": "part-58dd627e",
+      "categoryId": "cat-filtros",
+      "name": "Filtro de Óleo (Lubrificante Chevrolet Onix 1.0/1.4 2013-2019)",
+      "manufacturer": "Tecfil",
+      "manufacturerCode": "PSL152",
+      "description": "Aplicação extraída do PDF: Lubrificante Chevrolet Onix 1.0/1.4 2013-2019"
+    },
+    {
+      "id": "part-4d959fab",
+      "categoryId": "cat-filtros",
+      "name": "Filtro de Óleo (Ecológico    Volkswagen Polo 1.0 TSI 2018+)",
+      "manufacturer": "Tecfil",
+      "manufacturerCode": "PEL108",
+      "description": "Aplicação extraída do PDF: Ecológico    Volkswagen Polo 1.0 TSI 2018+"
+    },
+    {
+      "id": "part-3de916ca",
+      "categoryId": "cat-filtros",
+      "name": "Filtro de (Ar Motor          Fiat Argo 1.0/1.3 Firefly 2017+)",
+      "manufacturer": "Tecfil",
+      "manufacturerCode": "ARL6096",
+      "description": "Aplicação extraída do PDF: Ar Motor          Fiat Argo 1.0/1.3 Firefly 2017+"
+    },
+    {
+      "id": "part-07e36756",
+      "categoryId": "cat-filtros",
+      "name": "Filtro de (Combustível       Ford Ka 1.0/1.5 3 Cilindros)",
+      "manufacturer": "Tecfil",
+      "manufacturerCode": "FCI1630",
+      "description": "Aplicação extraída do PDF: Combustível       Ford Ka 1.0/1.5 3 Cilindros"
+    },
+    {
+      "id": "part-635cd660",
+      "categoryId": "cat-filtros",
+      "name": "Filtro de (Cabine (Ar Cond.) Hyundai HB20 1.0/1.6 2012-2022)",
+      "manufacturer": "Tecfil",
+      "manufacturerCode": "ACP303",
+      "description": "Aplicação extraída do PDF: Cabine (Ar Cond.) Hyundai HB20 1.0/1.6 2012-2022"
+    }
+  ],
+  "stores": [
+    {
+      "id": "store-sp-01",
+      "name": "AutoPeças Zona Sul - Balcão & Oficina",
+      "address": "Av. Santo Amaro, 1420 - Vila Nova Conceição",
+      "city": "São Paulo",
+      "state": "SP",
+      "whatsapp": "5511998877665",
+      "rating": 4.9
+    },
+    {
+      "id": "store-sp-02",
+      "name": "Desmanche Credenciado CDV Paulistana (Peças Usadas Legais)",
+      "address": "Rua do Manifesto, 890 - Ipiranga",
+      "city": "São Paulo",
+      "state": "SP",
+      "whatsapp": "5511977665544",
+      "rating": 4.7
+    },
+    {
+      "id": "store-rj-01",
+      "name": "Carioca AutoPeças & Distribuidora",
+      "address": "Av. Brasil, 12400 - Penha",
+      "city": "Rio de Janeiro",
+      "state": "RJ",
+      "whatsapp": "5521991234567",
+      "rating": 4.8
+    },
+    {
+      "id": "store-mg-01",
+      "name": "Mineirão Autopeças e Desmanche CDV",
+      "address": "Av. Dom Pedro II, 3100 - Carlos Prates",
+      "city": "Belo Horizonte",
+      "state": "MG",
+      "whatsapp": "5531988112233",
+      "rating": 4.85
+    },
+    {
+      "id": "store-pr-01",
+      "name": "Curitiba Peças Novas e Usadas",
+      "address": "Av. Marechal Floriano Peixoto, 4500 - Hauer",
+      "city": "Curitiba",
+      "state": "PR",
+      "whatsapp": "5541999887711",
+      "rating": 4.9
+    }
+  ]
+}

@@ -1,0 +1,1401 @@
+{
+  "brands": [
+    {
+      "id": "b-fiat",
+      "name": "Fiat",
+      "slug": "fiat",
+      "vehicleType": "CARRO",
+      "powertrain": "FLEX"
+    },
+    {
+      "id": "b-vw",
+      "name": "Volkswagen",
+      "slug": "volkswagen",
+      "vehicleType": "CARRO",
+      "powertrain": "FLEX"
+    },
+    {
+      "id": "b-chevrolet",
+      "name": "Chevrolet",
+      "slug": "chevrolet",
+      "vehicleType": "CARRO",
+      "powertrain": "FLEX"
+    },
+    {
+      "id": "b-ford",
+      "name": "Ford",
+      "slug": "ford",
+      "vehicleType": "CARRO",
+      "powertrain": "FLEX"
+    },
+    {
+      "id": "b-toyota",
+      "name": "Toyota",
+      "slug": "toyota",
+      "vehicleType": "CARRO",
+      "powertrain": "HIBRIDO"
+    },
+    {
+      "id": "b-honda-car",
+      "name": "Honda",
+      "slug": "honda",
+      "vehicleType": "CARRO",
+      "powertrain": "FLEX"
+    },
+    {
+      "id": "b-hyundai",
+      "name": "Hyundai",
+      "slug": "hyundai",
+      "vehicleType": "CARRO",
+      "powertrain": "FLEX"
+    },
+    {
+      "id": "b-renault",
+      "name": "Renault",
+      "slug": "renault",
+      "vehicleType": "CARRO",
+      "powertrain": "FLEX"
+    },
+    {
+      "id": "b-byd",
+      "name": "BYD",
+      "slug": "byd",
+      "vehicleType": "ELETRICO",
+      "powertrain": "ELETRICO"
+    },
+    {
+      "id": "b-gwm",
+      "name": "GWM",
+      "slug": "gwm",
+      "vehicleType": "ELETRICO",
+      "powertrain": "HIBRIDO"
+    },
+    {
+      "id": "b-tesla",
+      "name": "Tesla",
+      "slug": "tesla",
+      "vehicleType": "ELETRICO",
+      "powertrain": "ELETRICO"
+    },
+    {
+      "id": "b-volvo",
+      "name": "Volvo",
+      "slug": "volvo",
+      "vehicleType": "ELETRICO",
+      "powertrain": "ELETRICO"
+    },
+    {
+      "id": "b-nissan",
+      "name": "Nissan",
+      "slug": "nissan",
+      "vehicleType": "CARRO",
+      "powertrain": "FLEX"
+    },
+    {
+      "id": "b-jeep",
+      "name": "Jeep",
+      "slug": "jeep",
+      "vehicleType": "CARRO",
+      "powertrain": "FLEX"
+    },
+    {
+      "id": "b-peugeot",
+      "name": "Peugeot",
+      "slug": "peugeot",
+      "vehicleType": "CARRO",
+      "powertrain": "FLEX"
+    },
+    {
+      "id": "b-citroen",
+      "name": "Citroën",
+      "slug": "citroen",
+      "vehicleType": "CARRO",
+      "powertrain": "FLEX"
+    },
+    {
+      "id": "b-bmw",
+      "name": "BMW",
+      "slug": "bmw",
+      "vehicleType": "CARRO",
+      "powertrain": "GASOLINA"
+    },
+    {
+      "id": "b-audi",
+      "name": "Audi",
+      "slug": "audi",
+      "vehicleType": "CARRO",
+      "powertrain": "GASOLINA"
+    },
+    {
+      "id": "bm-honda",
+      "name": "Honda Motos",
+      "slug": "honda-motos",
+      "vehicleType": "MOTO",
+      "powertrain": "FLEX"
+    },
+    {
+      "id": "bm-yamaha",
+      "name": "Yamaha",
+      "slug": "yamaha",
+      "vehicleType": "MOTO",
+      "powertrain": "FLEX"
+    },
+    {
+      "id": "bm-suzuki",
+      "name": "Suzuki",
+      "slug": "suzuki",
+      "vehicleType": "MOTO",
+      "powertrain": "GASOLINA"
+    },
+    {
+      "id": "bm-shineray",
+      "name": "Shineray",
+      "slug": "shineray",
+      "vehicleType": "MOTO",
+      "powertrain": "GASOLINA"
+    },
+    {
+      "id": "bm-bmw",
+      "name": "BMW Motorrad",
+      "slug": "bmw-motorrad",
+      "vehicleType": "MOTO",
+      "powertrain": "GASOLINA"
+    },
+    {
+      "id": "bm-kawasaki",
+      "name": "Kawasaki",
+      "slug": "kawasaki",
+      "vehicleType": "MOTO",
+      "powertrain": "GASOLINA"
+    },
+    {
+      "id": "bm-royalenfield",
+      "name": "Royal Enfield",
+      "slug": "royal-enfield",
+      "vehicleType": "MOTO",
+      "powertrain": "GASOLINA"
+    },
+    {
+      "id": "bm-dafra",
+      "name": "Dafra",
+      "slug": "dafra",
+      "vehicleType": "MOTO",
+      "powertrain": "GASOLINA"
+    },
+    {
+      "id": "bm-triumph",
+      "name": "Triumph",
+      "slug": "triumph",
+      "vehicleType": "MOTO",
+      "powertrain": "GASOLINA"
+    },
+    {
+      "id": "bm-haojue",
+      "name": "Haojue",
+      "slug": "haojue",
+      "vehicleType": "MOTO",
+      "powertrain": "GASOLINA"
+    },
+    {
+      "id": "brand-voltz",
+      "name": "Voltz",
+      "slug": "voltz",
+      "vehicleType": "AUTOPROPELIDO",
+      "powertrain": "ELETRICO"
+    },
+    {
+      "id": "brand-watts",
+      "name": "Watts",
+      "slug": "watts",
+      "vehicleType": "AUTOPROPELIDO",
+      "powertrain": "ELETRICO"
+    },
+    {
+      "id": "brand-gloov",
+      "name": "Gloov",
+      "slug": "gloov",
+      "vehicleType": "AUTOPROPELIDO",
+      "powertrain": "ELETRICO"
+    },
+    {
+      "id": "brand-muuv",
+      "name": "Muuv",
+      "slug": "muuv",
+      "vehicleType": "AUTOPROPELIDO",
+      "powertrain": "ELETRICO"
+    },
+    {
+      "id": "brand-shineray-se",
+      "name": "Shineray (Scooters)",
+      "slug": "shineray-scooters",
+      "vehicleType": "AUTOPROPELIDO",
+      "powertrain": "ELETRICO"
+    },
+    {
+      "id": "brand-universal",
+      "name": "Universal / Importado",
+      "slug": "universal",
+      "vehicleType": "AUTOPROPELIDO",
+      "powertrain": "ELETRICO"
+    }
+  ],
+  "models": [
+    {
+      "id": "m-dolphin",
+      "brandId": "b-byd",
+      "name": "Dolphin",
+      "slug": "dolphin",
+      "vehicleType": "ELETRICO"
+    },
+    {
+      "id": "m-dolphin-mini",
+      "brandId": "b-byd",
+      "name": "Dolphin Mini",
+      "slug": "dolphin-mini",
+      "vehicleType": "ELETRICO"
+    },
+    {
+      "id": "m-song-plus",
+      "brandId": "b-byd",
+      "name": "Song Plus DM-i",
+      "slug": "song-plus",
+      "vehicleType": "ELETRICO"
+    },
+    {
+      "id": "m-yuan-plus",
+      "brandId": "b-byd",
+      "name": "Yuan Plus",
+      "slug": "yuan-plus",
+      "vehicleType": "ELETRICO"
+    },
+    {
+      "id": "m-seal",
+      "brandId": "b-byd",
+      "name": "Seal EV",
+      "slug": "seal",
+      "vehicleType": "ELETRICO"
+    },
+    {
+      "id": "m-king",
+      "brandId": "b-byd",
+      "name": "King DM-i",
+      "slug": "king",
+      "vehicleType": "ELETRICO"
+    },
+    {
+      "id": "m-haval-h6",
+      "brandId": "b-gwm",
+      "name": "Haval H6 HEV/PHEV",
+      "slug": "haval-h6",
+      "vehicleType": "ELETRICO"
+    },
+    {
+      "id": "m-ora-03",
+      "brandId": "b-gwm",
+      "name": "Ora 03 Skin/GT",
+      "slug": "ora-03",
+      "vehicleType": "ELETRICO"
+    },
+    {
+      "id": "m-model-3",
+      "brandId": "b-tesla",
+      "name": "Model 3",
+      "slug": "model-3",
+      "vehicleType": "ELETRICO"
+    },
+    {
+      "id": "m-model-y",
+      "brandId": "b-tesla",
+      "name": "Model Y",
+      "slug": "model-y",
+      "vehicleType": "ELETRICO"
+    },
+    {
+      "id": "m-ex30",
+      "brandId": "b-volvo",
+      "name": "EX30 Pure Electric",
+      "slug": "ex30",
+      "vehicleType": "ELETRICO"
+    },
+    {
+      "id": "m-xc40-ev",
+      "brandId": "b-volvo",
+      "name": "XC40 Recharge",
+      "slug": "xc40-recharge",
+      "vehicleType": "ELETRICO"
+    },
+    {
+      "id": "mm-cg160",
+      "brandId": "bm-honda",
+      "name": "CG 160 Titan / Fan / Start",
+      "slug": "cg-160",
+      "vehicleType": "MOTO"
+    },
+    {
+      "id": "mm-biz125",
+      "brandId": "bm-honda",
+      "name": "Biz 125 / 110i",
+      "slug": "biz-125",
+      "vehicleType": "MOTO"
+    },
+    {
+      "id": "mm-pop110",
+      "brandId": "bm-honda",
+      "name": "Pop 110i ES",
+      "slug": "pop-110i",
+      "vehicleType": "MOTO"
+    },
+    {
+      "id": "mm-bros160",
+      "brandId": "bm-honda",
+      "name": "NXR 160 Bros",
+      "slug": "nxr-160-bros",
+      "vehicleType": "MOTO"
+    },
+    {
+      "id": "mm-xre300",
+      "brandId": "bm-honda",
+      "name": "XRE 300 / Sahara 300",
+      "slug": "xre-300",
+      "vehicleType": "MOTO"
+    },
+    {
+      "id": "mm-cb300f",
+      "brandId": "bm-honda",
+      "name": "CB 300F Twister",
+      "slug": "cb-300f",
+      "vehicleType": "MOTO"
+    },
+    {
+      "id": "mm-pcx",
+      "brandId": "bm-honda",
+      "name": "PCX 160 ABS",
+      "slug": "pcx-160",
+      "vehicleType": "MOTO"
+    },
+    {
+      "id": "mm-factor150",
+      "brandId": "bm-yamaha",
+      "name": "YBR Factor 125 / 150",
+      "slug": "factor-150",
+      "vehicleType": "MOTO"
+    },
+    {
+      "id": "mm-fazer250",
+      "brandId": "bm-yamaha",
+      "name": "Fazer FZ15 / FZ25",
+      "slug": "fazer-fz25",
+      "vehicleType": "MOTO"
+    },
+    {
+      "id": "mm-crosser",
+      "brandId": "bm-yamaha",
+      "name": "Crosser 150 S/Z",
+      "slug": "crosser-150",
+      "vehicleType": "MOTO"
+    },
+    {
+      "id": "mm-lander",
+      "brandId": "bm-yamaha",
+      "name": "Lander 250 ABS",
+      "slug": "lander-250",
+      "vehicleType": "MOTO"
+    },
+    {
+      "id": "mm-nmax",
+      "brandId": "bm-yamaha",
+      "name": "NMAX 160 Connected",
+      "slug": "nmax-160",
+      "vehicleType": "MOTO"
+    },
+    {
+      "id": "mm-mt03",
+      "brandId": "bm-yamaha",
+      "name": "MT-03 ABS",
+      "slug": "mt-03",
+      "vehicleType": "MOTO"
+    },
+    {
+      "id": "mm-xy50",
+      "brandId": "bm-shineray",
+      "name": "XY 50 Q / Phoenix 50",
+      "slug": "xy-50",
+      "vehicleType": "MOTO"
+    },
+    {
+      "id": "mm-worker125",
+      "brandId": "bm-shineray",
+      "name": "Worker 125 / 150",
+      "slug": "worker-125",
+      "vehicleType": "MOTO"
+    },
+    {
+      "id": "mm-g310gs",
+      "brandId": "bm-bmw",
+      "name": "G 310 GS / R",
+      "slug": "g-310-gs",
+      "vehicleType": "MOTO"
+    },
+    {
+      "id": "mm-f850gs",
+      "brandId": "bm-bmw",
+      "name": "F 850 GS Adventure",
+      "slug": "f-850-gs",
+      "vehicleType": "MOTO"
+    },
+    {
+      "id": "mm-r1250gs",
+      "brandId": "bm-bmw",
+      "name": "R 1250 GS / R 1300 GS",
+      "slug": "r-1250-gs",
+      "vehicleType": "MOTO"
+    },
+    {
+      "id": "m-corolla",
+      "brandId": "b-toyota",
+      "name": "Corolla",
+      "slug": "corolla",
+      "vehicleType": "CARRO"
+    },
+    {
+      "id": "m-hilux",
+      "brandId": "b-toyota",
+      "name": "Hilux",
+      "slug": "hilux",
+      "vehicleType": "CARRO"
+    },
+    {
+      "id": "m-civic",
+      "brandId": "b-honda-car",
+      "name": "Civic",
+      "slug": "civic",
+      "vehicleType": "CARRO"
+    },
+    {
+      "id": "m-fit",
+      "brandId": "b-honda-car",
+      "name": "Fit",
+      "slug": "fit",
+      "vehicleType": "CARRO"
+    },
+    {
+      "id": "m-hrv",
+      "brandId": "b-honda-car",
+      "name": "HR-V",
+      "slug": "hrv",
+      "vehicleType": "CARRO"
+    },
+    {
+      "id": "m-hb20",
+      "brandId": "b-hyundai",
+      "name": "HB20",
+      "slug": "hb20",
+      "vehicleType": "CARRO"
+    },
+    {
+      "id": "m-creta",
+      "brandId": "b-hyundai",
+      "name": "Creta",
+      "slug": "creta",
+      "vehicleType": "CARRO"
+    },
+    {
+      "id": "m-kwid",
+      "brandId": "b-renault",
+      "name": "Kwid",
+      "slug": "kwid",
+      "vehicleType": "CARRO"
+    },
+    {
+      "id": "m-sandero",
+      "brandId": "b-renault",
+      "name": "Sandero",
+      "slug": "sandero",
+      "vehicleType": "CARRO"
+    },
+    {
+      "id": "model-scooter-60v",
+      "brandId": "brand-universal",
+      "name": "Scooter 60V (Citycoco/XingLing)",
+      "slug": "scooter-60v",
+      "vehicleType": "AUTOPROPELIDO"
+    },
+    {
+      "id": "model-patinete-48v",
+      "brandId": "brand-universal",
+      "name": "Patinete Elétrico 48V",
+      "slug": "patinete-48v",
+      "vehicleType": "AUTOPROPELIDO"
+    },
+    {
+      "id": "m-argo-1.0-6v-flex",
+      "brandId": "b-fiat",
+      "name": "ARGO 1.0 6V Flex",
+      "slug": "argo-1.0-6v-flex",
+      "vehicleType": "CARRO"
+    },
+    {
+      "id": "m-argo-drive-1.0-6v-flex",
+      "brandId": "b-fiat",
+      "name": "ARGO DRIVE 1.0 6V Flex",
+      "slug": "argo-drive-1.0-6v-flex",
+      "vehicleType": "CARRO"
+    },
+    {
+      "id": "m-argo-drive-1.3-8v-flex",
+      "brandId": "b-fiat",
+      "name": "ARGO DRIVE 1.3 8V Flex",
+      "slug": "argo-drive-1.3-8v-flex",
+      "vehicleType": "CARRO"
+    },
+    {
+      "id": "m-argo-drive-1.3-8v-flex-aut.",
+      "brandId": "b-fiat",
+      "name": "ARGO DRIVE 1.3 8V Flex Aut.",
+      "slug": "argo-drive-1.3-8v-flex-aut.",
+      "vehicleType": "CARRO"
+    },
+    {
+      "id": "m-apolo-gl-1.8",
+      "brandId": "b-vw",
+      "name": "Apolo GL 1.8",
+      "slug": "apolo-gl-1.8",
+      "vehicleType": "CARRO"
+    },
+    {
+      "id": "m-apolo-gls-vip-1.8",
+      "brandId": "b-vw",
+      "name": "Apolo GLS/ Vip 1.8",
+      "slug": "apolo-gls-vip-1.8",
+      "vehicleType": "CARRO"
+    },
+    {
+      "id": "m-gol-(novo)-1.0-mi-total-flex-8v-2p",
+      "brandId": "b-vw",
+      "name": "Gol (novo) 1.0 Mi Total Flex 8V 2p",
+      "slug": "gol-(novo)-1.0-mi-total-flex-8v-2p",
+      "vehicleType": "CARRO"
+    },
+    {
+      "id": "m-gol-(novo)-1.0-mi-total-flex-8v-4p",
+      "brandId": "b-vw",
+      "name": "Gol (novo) 1.0 Mi Total Flex 8V 4p",
+      "slug": "gol-(novo)-1.0-mi-total-flex-8v-4p",
+      "vehicleType": "CARRO"
+    },
+    {
+      "id": "m-cruze-black-bow-tie-1.4-tb-flex-4p-aut",
+      "brandId": "b-chevrolet",
+      "name": "CRUZE Black Bow Tie 1.4 TB Flex 4p Aut",
+      "slug": "cruze-black-bow-tie-1.4-tb-flex-4p-aut",
+      "vehicleType": "CARRO"
+    },
+    {
+      "id": "m-cruze-hb-black-bow-tie-1.4-tb-flex-aut.",
+      "brandId": "b-chevrolet",
+      "name": "CRUZE HB Black Bow Tie 1.4 TB Flex Aut.",
+      "slug": "cruze-hb-black-bow-tie-1.4-tb-flex-aut.",
+      "vehicleType": "CARRO"
+    },
+    {
+      "id": "m-cruze-hb-sport-lt-1.8-16v-flexp.-5p-aut",
+      "brandId": "b-chevrolet",
+      "name": "CRUZE HB Sport LT 1.8 16V FlexP. 5p Aut",
+      "slug": "cruze-hb-sport-lt-1.8-16v-flexp.-5p-aut",
+      "vehicleType": "CARRO"
+    },
+    {
+      "id": "m-cruze-hb-sport-lt-1.8-16v-flexp.-5p-mec",
+      "brandId": "b-chevrolet",
+      "name": "CRUZE HB Sport LT 1.8 16V FlexP. 5p Mec",
+      "slug": "cruze-hb-sport-lt-1.8-16v-flexp.-5p-mec",
+      "vehicleType": "CARRO"
+    }
+  ],
+  "versions": [
+    {
+      "id": "v-dolphin-1",
+      "modelId": "m-dolphin",
+      "name": "GS EV 180kW",
+      "yearStart": 2023,
+      "yearEnd": 2026,
+      "engine": "Elétrico 95cv"
+    },
+    {
+      "id": "v-dolphin-mini-1",
+      "modelId": "m-dolphin-mini",
+      "name": "EV 38kWh",
+      "yearStart": 2024,
+      "yearEnd": 2026,
+      "engine": "Elétrico 75cv"
+    },
+    {
+      "id": "v-song-1",
+      "modelId": "m-song-plus",
+      "name": "1.5 DM-i Plug-in Hybrid",
+      "yearStart": 2022,
+      "yearEnd": 2026,
+      "engine": "Híbrido 235cv"
+    },
+    {
+      "id": "v-seal-1",
+      "modelId": "m-seal",
+      "name": "AWD EV 530cv",
+      "yearStart": 2023,
+      "yearEnd": 2026,
+      "engine": "Elétrico 530cv"
+    },
+    {
+      "id": "v-haval-1",
+      "modelId": "m-haval-h6",
+      "name": "HEV 1.5 Turbo 243cv",
+      "yearStart": 2023,
+      "yearEnd": 2026,
+      "engine": "Híbrido 243cv"
+    },
+    {
+      "id": "v-ora-1",
+      "modelId": "m-ora-03",
+      "name": "Skin EV 48kWh",
+      "yearStart": 2023,
+      "yearEnd": 2026,
+      "engine": "Elétrico 171cv"
+    },
+    {
+      "id": "v-model3-1",
+      "modelId": "m-model-3",
+      "name": "Long Range AWD",
+      "yearStart": 2021,
+      "yearEnd": 2026,
+      "engine": "Elétrico Dual Motor"
+    },
+    {
+      "id": "vm-cg160-1",
+      "modelId": "mm-cg160",
+      "name": "Titan 160 FlexOne",
+      "yearStart": 2016,
+      "yearEnd": 2026,
+      "engine": "162cc Flex"
+    },
+    {
+      "id": "vm-biz125-1",
+      "modelId": "mm-biz125",
+      "name": "EX 125 FlexOne",
+      "yearStart": 2018,
+      "yearEnd": 2026,
+      "engine": "124.9cc Flex"
+    },
+    {
+      "id": "vm-bros-1",
+      "modelId": "mm-bros160",
+      "name": "ESDD 160 FlexOne",
+      "yearStart": 2016,
+      "yearEnd": 2026,
+      "engine": "162.7cc Flex"
+    },
+    {
+      "id": "vm-xre-1",
+      "modelId": "mm-xre300",
+      "name": "ABS / Rally 300",
+      "yearStart": 2019,
+      "yearEnd": 2025,
+      "engine": "291.6cc Flex"
+    },
+    {
+      "id": "vm-fz25-1",
+      "modelId": "mm-fazer250",
+      "name": "ABS 250 Flex",
+      "yearStart": 2018,
+      "yearEnd": 2026,
+      "engine": "249cc Flex"
+    },
+    {
+      "id": "vm-factor-1",
+      "modelId": "mm-factor150",
+      "name": "ED 150 Flex",
+      "yearStart": 2017,
+      "yearEnd": 2026,
+      "engine": "149cc Flex"
+    },
+    {
+      "id": "vm-lander-1",
+      "modelId": "mm-lander",
+      "name": "ABS 250",
+      "yearStart": 2019,
+      "yearEnd": 2026,
+      "engine": "249cc Flex"
+    },
+    {
+      "id": "v-corolla-1",
+      "modelId": "m-corolla",
+      "name": "XEi 2.0 Flex",
+      "yearStart": 2015,
+      "yearEnd": 2020,
+      "engine": "2.0 16v Flex"
+    },
+    {
+      "id": "v-hb20-1",
+      "modelId": "m-hb20",
+      "name": "Comfort 1.0",
+      "yearStart": 2012,
+      "yearEnd": 2019,
+      "engine": "1.0 12v Flex"
+    },
+    {
+      "id": "ve-plus-1",
+      "modelId": "m-yuan-plus",
+      "name": "EV Standard",
+      "yearStart": 2022,
+      "yearEnd": 2026,
+      "engine": "Elétrico"
+    },
+    {
+      "id": "ve-king-1",
+      "modelId": "m-king",
+      "name": "EV Standard",
+      "yearStart": 2022,
+      "yearEnd": 2026,
+      "engine": "Elétrico"
+    },
+    {
+      "id": "ve-y-1",
+      "modelId": "m-model-y",
+      "name": "EV Standard",
+      "yearStart": 2022,
+      "yearEnd": 2026,
+      "engine": "Elétrico"
+    },
+    {
+      "id": "ve-ex30-1",
+      "modelId": "m-ex30",
+      "name": "EV Standard",
+      "yearStart": 2022,
+      "yearEnd": 2026,
+      "engine": "Elétrico"
+    },
+    {
+      "id": "ve-ev-1",
+      "modelId": "m-xc40-ev",
+      "name": "EV Standard",
+      "yearStart": 2022,
+      "yearEnd": 2026,
+      "engine": "Elétrico"
+    },
+    {
+      "id": "vm-pop110-1",
+      "modelId": "mm-pop110",
+      "name": "Standard Flex",
+      "yearStart": 2018,
+      "yearEnd": 2026,
+      "engine": "150cc Flex"
+    },
+    {
+      "id": "vm-cb300f-1",
+      "modelId": "mm-cb300f",
+      "name": "Standard Flex",
+      "yearStart": 2018,
+      "yearEnd": 2026,
+      "engine": "150cc Flex"
+    },
+    {
+      "id": "vm-pcx-1",
+      "modelId": "mm-pcx",
+      "name": "Standard Flex",
+      "yearStart": 2018,
+      "yearEnd": 2026,
+      "engine": "150cc Flex"
+    },
+    {
+      "id": "vm-crosser-1",
+      "modelId": "mm-crosser",
+      "name": "Standard Flex",
+      "yearStart": 2018,
+      "yearEnd": 2026,
+      "engine": "150cc Flex"
+    },
+    {
+      "id": "vm-nmax-1",
+      "modelId": "mm-nmax",
+      "name": "Standard Flex",
+      "yearStart": 2018,
+      "yearEnd": 2026,
+      "engine": "150cc Flex"
+    },
+    {
+      "id": "vm-mt03-1",
+      "modelId": "mm-mt03",
+      "name": "Standard Flex",
+      "yearStart": 2018,
+      "yearEnd": 2026,
+      "engine": "150cc Flex"
+    },
+    {
+      "id": "vm-xy50-1",
+      "modelId": "mm-xy50",
+      "name": "Standard Flex",
+      "yearStart": 2018,
+      "yearEnd": 2026,
+      "engine": "150cc Flex"
+    },
+    {
+      "id": "vm-worker125-1",
+      "modelId": "mm-worker125",
+      "name": "Standard Flex",
+      "yearStart": 2018,
+      "yearEnd": 2026,
+      "engine": "150cc Flex"
+    },
+    {
+      "id": "vm-g310gs-1",
+      "modelId": "mm-g310gs",
+      "name": "Standard Flex",
+      "yearStart": 2018,
+      "yearEnd": 2026,
+      "engine": "150cc Flex"
+    },
+    {
+      "id": "vm-f850gs-1",
+      "modelId": "mm-f850gs",
+      "name": "Standard Flex",
+      "yearStart": 2018,
+      "yearEnd": 2026,
+      "engine": "150cc Flex"
+    },
+    {
+      "id": "vm-r1250gs-1",
+      "modelId": "mm-r1250gs",
+      "name": "Standard Flex",
+      "yearStart": 2018,
+      "yearEnd": 2026,
+      "engine": "150cc Flex"
+    },
+    {
+      "id": "v-hilux-1",
+      "modelId": "m-hilux",
+      "name": "Highline 1.0",
+      "yearStart": 2018,
+      "yearEnd": 2024,
+      "engine": "1.0 12v Flex"
+    },
+    {
+      "id": "v-hilux-2",
+      "modelId": "m-hilux",
+      "name": "Freestyle 1.6",
+      "yearStart": 2015,
+      "yearEnd": 2019,
+      "engine": "1.6 16v Flex"
+    },
+    {
+      "id": "v-civic-1",
+      "modelId": "m-civic",
+      "name": "XEi 1.6",
+      "yearStart": 2018,
+      "yearEnd": 2024,
+      "engine": "1.4 Turbo Flex"
+    },
+    {
+      "id": "v-civic-2",
+      "modelId": "m-civic",
+      "name": "Highline 1.3",
+      "yearStart": 2020,
+      "yearEnd": 2026,
+      "engine": "1.4 Turbo Flex"
+    },
+    {
+      "id": "v-civic-3",
+      "modelId": "m-civic",
+      "name": "LTZ 1.4",
+      "yearStart": 2013,
+      "yearEnd": 2019,
+      "engine": "1.0 8v Flex"
+    },
+    {
+      "id": "v-civic-4",
+      "modelId": "m-civic",
+      "name": "Freestyle 1.4",
+      "yearStart": 2018,
+      "yearEnd": 2026,
+      "engine": "1.3 Turbo Flex"
+    },
+    {
+      "id": "v-fit-1",
+      "modelId": "m-fit",
+      "name": "Highline 1.0",
+      "yearStart": 2020,
+      "yearEnd": 2026,
+      "engine": "1.0 12v Flex"
+    },
+    {
+      "id": "v-fit-2",
+      "modelId": "m-fit",
+      "name": "Trend 1.6",
+      "yearStart": 2015,
+      "yearEnd": 2021,
+      "engine": "1.0 8v Flex"
+    },
+    {
+      "id": "v-fit-3",
+      "modelId": "m-fit",
+      "name": "Trend 1.4",
+      "yearStart": 2018,
+      "yearEnd": 2022,
+      "engine": "1.0 12v Flex"
+    },
+    {
+      "id": "v-hrv-1",
+      "modelId": "m-hrv",
+      "name": "Freestyle 1.3",
+      "yearStart": 2018,
+      "yearEnd": 2026,
+      "engine": "1.0 8v Flex"
+    },
+    {
+      "id": "v-hrv-2",
+      "modelId": "m-hrv",
+      "name": "LTZ 1.6",
+      "yearStart": 2013,
+      "yearEnd": 2019,
+      "engine": "1.0 8v Flex"
+    },
+    {
+      "id": "v-hrv-3",
+      "modelId": "m-hrv",
+      "name": "LT 1.0",
+      "yearStart": 2018,
+      "yearEnd": 2022,
+      "engine": "1.0 12v Flex"
+    },
+    {
+      "id": "v-hrv-4",
+      "modelId": "m-hrv",
+      "name": "Trekking 1.0",
+      "yearStart": 2020,
+      "yearEnd": 2026,
+      "engine": "2.0 16v Flex"
+    },
+    {
+      "id": "v-creta-1",
+      "modelId": "m-creta",
+      "name": "Freestyle 1.0",
+      "yearStart": 2020,
+      "yearEnd": 2026,
+      "engine": "1.0 12v Flex"
+    },
+    {
+      "id": "v-creta-2",
+      "modelId": "m-creta",
+      "name": "Freestyle 1.4",
+      "yearStart": 2020,
+      "yearEnd": 2024,
+      "engine": "1.0 12v Flex"
+    },
+    {
+      "id": "v-creta-3",
+      "modelId": "m-creta",
+      "name": "LT 1.6",
+      "yearStart": 2013,
+      "yearEnd": 2026,
+      "engine": "1.3 Turbo Flex"
+    },
+    {
+      "id": "v-kwid-1",
+      "modelId": "m-kwid",
+      "name": "LTZ 1.6",
+      "yearStart": 2013,
+      "yearEnd": 2019,
+      "engine": "1.4 Turbo Flex"
+    },
+    {
+      "id": "v-kwid-2",
+      "modelId": "m-kwid",
+      "name": "Highline 1.4",
+      "yearStart": 2015,
+      "yearEnd": 2019,
+      "engine": "1.4 Turbo Flex"
+    },
+    {
+      "id": "v-sandero-1",
+      "modelId": "m-sandero",
+      "name": "Comfort 1.3",
+      "yearStart": 2010,
+      "yearEnd": 2016,
+      "engine": "1.6 16v Flex"
+    },
+    {
+      "id": "v-sandero-2",
+      "modelId": "m-sandero",
+      "name": "Trend 1.4",
+      "yearStart": 2015,
+      "yearEnd": 2021,
+      "engine": "1.0 8v Flex"
+    },
+    {
+      "id": "vp-60v-1",
+      "modelId": "model-scooter-60v",
+      "name": "Versão Base",
+      "yearStart": 2023,
+      "yearEnd": 2026,
+      "engine": "Motor Hub 500W"
+    },
+    {
+      "id": "vp-48v-1",
+      "modelId": "model-patinete-48v",
+      "name": "Versão Base",
+      "yearStart": 2023,
+      "yearEnd": 2026,
+      "engine": "Motor Hub 500W"
+    },
+    {
+      "id": "v-argo-1.0-6v-flex-2018-5",
+      "modelId": "m-argo-1.0-6v-flex",
+      "name": "2018 Flex",
+      "yearStart": 2018,
+      "yearEnd": 2018,
+      "engine": "Flex"
+    },
+    {
+      "id": "v-argo-1.0-6v-flex-2019-5",
+      "modelId": "m-argo-1.0-6v-flex",
+      "name": "2019 Flex",
+      "yearStart": 2019,
+      "yearEnd": 2019,
+      "engine": "Flex"
+    },
+    {
+      "id": "v-argo-1.0-6v-flex-2020-5",
+      "modelId": "m-argo-1.0-6v-flex",
+      "name": "2020 Flex",
+      "yearStart": 2020,
+      "yearEnd": 2020,
+      "engine": "Flex"
+    },
+    {
+      "id": "v-argo-1.0-6v-flex-2021-5",
+      "modelId": "m-argo-1.0-6v-flex",
+      "name": "2021 Flex",
+      "yearStart": 2021,
+      "yearEnd": 2021,
+      "engine": "Flex"
+    },
+    {
+      "id": "v-argo-1.0-6v-flex-2022-5",
+      "modelId": "m-argo-1.0-6v-flex",
+      "name": "2022 Flex",
+      "yearStart": 2022,
+      "yearEnd": 2022,
+      "engine": "Flex"
+    },
+    {
+      "id": "v-argo-drive-1.0-6v-flex-2018-5",
+      "modelId": "m-argo-drive-1.0-6v-flex",
+      "name": "2018 Flex",
+      "yearStart": 2018,
+      "yearEnd": 2018,
+      "engine": "Flex"
+    },
+    {
+      "id": "v-argo-drive-1.0-6v-flex-2019-5",
+      "modelId": "m-argo-drive-1.0-6v-flex",
+      "name": "2019 Flex",
+      "yearStart": 2019,
+      "yearEnd": 2019,
+      "engine": "Flex"
+    },
+    {
+      "id": "v-argo-drive-1.0-6v-flex-2020-5",
+      "modelId": "m-argo-drive-1.0-6v-flex",
+      "name": "2020 Flex",
+      "yearStart": 2020,
+      "yearEnd": 2020,
+      "engine": "Flex"
+    },
+    {
+      "id": "v-argo-drive-1.0-6v-flex-2021-5",
+      "modelId": "m-argo-drive-1.0-6v-flex",
+      "name": "2021 Flex",
+      "yearStart": 2021,
+      "yearEnd": 2021,
+      "engine": "Flex"
+    },
+    {
+      "id": "v-argo-drive-1.0-6v-flex-2022-5",
+      "modelId": "m-argo-drive-1.0-6v-flex",
+      "name": "2022 Flex",
+      "yearStart": 2022,
+      "yearEnd": 2022,
+      "engine": "Flex"
+    },
+    {
+      "id": "v-argo-drive-1.3-8v-flex-2018-5",
+      "modelId": "m-argo-drive-1.3-8v-flex",
+      "name": "2018 Flex",
+      "yearStart": 2018,
+      "yearEnd": 2018,
+      "engine": "Flex"
+    },
+    {
+      "id": "v-argo-drive-1.3-8v-flex-2019-5",
+      "modelId": "m-argo-drive-1.3-8v-flex",
+      "name": "2019 Flex",
+      "yearStart": 2019,
+      "yearEnd": 2019,
+      "engine": "Flex"
+    },
+    {
+      "id": "v-argo-drive-1.3-8v-flex-2020-5",
+      "modelId": "m-argo-drive-1.3-8v-flex",
+      "name": "2020 Flex",
+      "yearStart": 2020,
+      "yearEnd": 2020,
+      "engine": "Flex"
+    },
+    {
+      "id": "v-argo-drive-1.3-8v-flex-2021-5",
+      "modelId": "m-argo-drive-1.3-8v-flex",
+      "name": "2021 Flex",
+      "yearStart": 2021,
+      "yearEnd": 2021,
+      "engine": "Flex"
+    },
+    {
+      "id": "v-argo-drive-1.3-8v-flex-aut.-2023-5",
+      "modelId": "m-argo-drive-1.3-8v-flex-aut.",
+      "name": "2023 Flex",
+      "yearStart": 2023,
+      "yearEnd": 2023,
+      "engine": "Flex"
+    },
+    {
+      "id": "v-argo-drive-1.3-8v-flex-aut.-2024-5",
+      "modelId": "m-argo-drive-1.3-8v-flex-aut.",
+      "name": "2024 Flex",
+      "yearStart": 2024,
+      "yearEnd": 2024,
+      "engine": "Flex"
+    },
+    {
+      "id": "v-argo-drive-1.3-8v-flex-aut.-2025-5",
+      "modelId": "m-argo-drive-1.3-8v-flex-aut.",
+      "name": "2025 Flex",
+      "yearStart": 2025,
+      "yearEnd": 2025,
+      "engine": "Flex"
+    },
+    {
+      "id": "v-argo-drive-1.3-8v-flex-aut.-2026-5",
+      "modelId": "m-argo-drive-1.3-8v-flex-aut.",
+      "name": "2026 Flex",
+      "yearStart": 2026,
+      "yearEnd": 2026,
+      "engine": "Flex"
+    },
+    {
+      "id": "v-argo-drive-1.3-8v-flex-aut.-32000-5",
+      "modelId": "m-argo-drive-1.3-8v-flex-aut.",
+      "name": "2024 Flex",
+      "yearStart": 2024,
+      "yearEnd": 2024,
+      "engine": "Flex"
+    },
+    {
+      "id": "v-apolo-gl-1.8-1990-1",
+      "modelId": "m-apolo-gl-1.8",
+      "name": "1990 Gasolina",
+      "yearStart": 1990,
+      "yearEnd": 1990,
+      "engine": "Gasolina"
+    },
+    {
+      "id": "v-apolo-gl-1.8-1991-1",
+      "modelId": "m-apolo-gl-1.8",
+      "name": "1991 Gasolina",
+      "yearStart": 1991,
+      "yearEnd": 1991,
+      "engine": "Gasolina"
+    },
+    {
+      "id": "v-apolo-gl-1.8-1992-1",
+      "modelId": "m-apolo-gl-1.8",
+      "name": "1992 Gasolina",
+      "yearStart": 1992,
+      "yearEnd": 1992,
+      "engine": "Gasolina"
+    },
+    {
+      "id": "v-apolo-gls-vip-1.8-1990-1",
+      "modelId": "m-apolo-gls-vip-1.8",
+      "name": "1990 Gasolina",
+      "yearStart": 1990,
+      "yearEnd": 1990,
+      "engine": "Gasolina"
+    },
+    {
+      "id": "v-apolo-gls-vip-1.8-1991-1",
+      "modelId": "m-apolo-gls-vip-1.8",
+      "name": "1991 Gasolina",
+      "yearStart": 1991,
+      "yearEnd": 1991,
+      "engine": "Gasolina"
+    },
+    {
+      "id": "v-apolo-gls-vip-1.8-1992-1",
+      "modelId": "m-apolo-gls-vip-1.8",
+      "name": "1992 Gasolina",
+      "yearStart": 1992,
+      "yearEnd": 1992,
+      "engine": "Gasolina"
+    },
+    {
+      "id": "v-gol-(novo)-1.0-mi-total-flex-8v-2p-2013-5",
+      "modelId": "m-gol-(novo)-1.0-mi-total-flex-8v-2p",
+      "name": "2013 Flex",
+      "yearStart": 2013,
+      "yearEnd": 2013,
+      "engine": "Flex"
+    },
+    {
+      "id": "v-gol-(novo)-1.0-mi-total-flex-8v-2p-2014-5",
+      "modelId": "m-gol-(novo)-1.0-mi-total-flex-8v-2p",
+      "name": "2014 Flex",
+      "yearStart": 2014,
+      "yearEnd": 2014,
+      "engine": "Flex"
+    },
+    {
+      "id": "v-gol-(novo)-1.0-mi-total-flex-8v-4p-2009-5",
+      "modelId": "m-gol-(novo)-1.0-mi-total-flex-8v-4p",
+      "name": "2009 Flex",
+      "yearStart": 2009,
+      "yearEnd": 2009,
+      "engine": "Flex"
+    },
+    {
+      "id": "v-gol-(novo)-1.0-mi-total-flex-8v-4p-2010-5",
+      "modelId": "m-gol-(novo)-1.0-mi-total-flex-8v-4p",
+      "name": "2010 Flex",
+      "yearStart": 2010,
+      "yearEnd": 2010,
+      "engine": "Flex"
+    },
+    {
+      "id": "v-gol-(novo)-1.0-mi-total-flex-8v-4p-2011-5",
+      "modelId": "m-gol-(novo)-1.0-mi-total-flex-8v-4p",
+      "name": "2011 Flex",
+      "yearStart": 2011,
+      "yearEnd": 2011,
+      "engine": "Flex"
+    },
+    {
+      "id": "v-gol-(novo)-1.0-mi-total-flex-8v-4p-2012-5",
+      "modelId": "m-gol-(novo)-1.0-mi-total-flex-8v-4p",
+      "name": "2012 Flex",
+      "yearStart": 2012,
+      "yearEnd": 2012,
+      "engine": "Flex"
+    },
+    {
+      "id": "v-gol-(novo)-1.0-mi-total-flex-8v-4p-2013-5",
+      "modelId": "m-gol-(novo)-1.0-mi-total-flex-8v-4p",
+      "name": "2013 Flex",
+      "yearStart": 2013,
+      "yearEnd": 2013,
+      "engine": "Flex"
+    },
+    {
+      "id": "v-cruze-black-bow-tie-1.4-tb-flex-4p-aut-2019-5",
+      "modelId": "m-cruze-black-bow-tie-1.4-tb-flex-4p-aut",
+      "name": "2019 Flex",
+      "yearStart": 2019,
+      "yearEnd": 2019,
+      "engine": "Flex"
+    },
+    {
+      "id": "v-cruze-hb-black-bow-tie-1.4-tb-flex-aut.-2019-5",
+      "modelId": "m-cruze-hb-black-bow-tie-1.4-tb-flex-aut.",
+      "name": "2019 Flex",
+      "yearStart": 2019,
+      "yearEnd": 2019,
+      "engine": "Flex"
+    },
+    {
+      "id": "v-cruze-hb-sport-lt-1.8-16v-flexp.-5p-aut-2012-5",
+      "modelId": "m-cruze-hb-sport-lt-1.8-16v-flexp.-5p-aut",
+      "name": "2012 Flex",
+      "yearStart": 2012,
+      "yearEnd": 2012,
+      "engine": "Flex"
+    },
+    {
+      "id": "v-cruze-hb-sport-lt-1.8-16v-flexp.-5p-aut-2013-5",
+      "modelId": "m-cruze-hb-sport-lt-1.8-16v-flexp.-5p-aut",
+      "name": "2013 Flex",
+      "yearStart": 2013,
+      "yearEnd": 2013,
+      "engine": "Flex"
+    },
+    {
+      "id": "v-cruze-hb-sport-lt-1.8-16v-flexp.-5p-aut-2014-5",
+      "modelId": "m-cruze-hb-sport-lt-1.8-16v-flexp.-5p-aut",
+      "name": "2014 Flex",
+      "yearStart": 2014,
+      "yearEnd": 2014,
+      "engine": "Flex"
+    },
+    {
+      "id": "v-cruze-hb-sport-lt-1.8-16v-flexp.-5p-aut-2015-5",
+      "modelId": "m-cruze-hb-sport-lt-1.8-16v-flexp.-5p-aut",
+      "name": "2015 Flex",
+      "yearStart": 2015,
+      "yearEnd": 2015,
+      "engine": "Flex"
+    },
+    {
+      "id": "v-cruze-hb-sport-lt-1.8-16v-flexp.-5p-aut-2016-5",
+      "modelId": "m-cruze-hb-sport-lt-1.8-16v-flexp.-5p-aut",
+      "name": "2016 Flex",
+      "yearStart": 2016,
+      "yearEnd": 2016,
+      "engine": "Flex"
+    },
+    {
+      "id": "v-cruze-hb-sport-lt-1.8-16v-flexp.-5p-mec-2012-5",
+      "modelId": "m-cruze-hb-sport-lt-1.8-16v-flexp.-5p-mec",
+      "name": "2012 Flex",
+      "yearStart": 2012,
+      "yearEnd": 2012,
+      "engine": "Flex"
+    },
+    {
+      "id": "v-cruze-hb-sport-lt-1.8-16v-flexp.-5p-mec-2013-5",
+      "modelId": "m-cruze-hb-sport-lt-1.8-16v-flexp.-5p-mec",
+      "name": "2013 Flex",
+      "yearStart": 2013,
+      "yearEnd": 2013,
+      "engine": "Flex"
+    },
+    {
+      "id": "v-cruze-hb-sport-lt-1.8-16v-flexp.-5p-mec-2014-5",
+      "modelId": "m-cruze-hb-sport-lt-1.8-16v-flexp.-5p-mec",
+      "name": "2014 Flex",
+      "yearStart": 2014,
+      "yearEnd": 2014,
+      "engine": "Flex"
+    },
+    {
+      "id": "v-cruze-hb-sport-lt-1.8-16v-flexp.-5p-mec-2015-5",
+      "modelId": "m-cruze-hb-sport-lt-1.8-16v-flexp.-5p-mec",
+      "name": "2015 Flex",
+      "yearStart": 2015,
+      "yearEnd": 2015,
+      "engine": "Flex"
+    },
+    {
+      "id": "v-cruze-hb-sport-lt-1.8-16v-flexp.-5p-mec-2016-5",
+      "modelId": "m-cruze-hb-sport-lt-1.8-16v-flexp.-5p-mec",
+      "name": "2016 Flex",
+      "yearStart": 2016,
+      "yearEnd": 2016,
+      "engine": "Flex"
+    }
+  ]
+}

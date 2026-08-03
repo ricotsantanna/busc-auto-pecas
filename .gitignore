@@ -1,0 +1,11 @@
+node_modules/
+.next/
+.env.local
+.env
+catalogos_*/
+continental-catalogo/
+fipe_data/
+*.log
+.DS_Store
+*.zip
+*.pdf
