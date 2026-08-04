@@ -8,8 +8,8 @@ export const runtime = "edge";
 
 const BASE_URL = "https://parallelum.com.br/fipe/api/v1";
 const VEHICLE_TYPES = ["carros", "motos"];
-// Limit time to 15 seconds to avoid Cloudflare Worker timeout
-const MAX_EXECUTION_TIME_MS = 15000;
+// Limit time to 5 seconds to avoid Cloudflare Worker CPU timeout
+const MAX_EXECUTION_TIME_MS = 5000;
 
 const delay = (ms: number) => new Promise((res) => setTimeout(res, ms));
 
@@ -75,6 +75,8 @@ export async function GET(req: NextRequest) {
     state.status = "running";
     let processedThisRun = 0;
 
+    let cachedMarcas: Record<string, any[]> = {};
+
     // Loop até estourar o tempo
     while (Date.now() - startTime < MAX_EXECUTION_TIME_MS) {
       if (state.typeIndex >= VEHICLE_TYPES.length) {
@@ -94,8 +96,12 @@ export async function GET(req: NextRequest) {
       const vType = VEHICLE_TYPES[state.typeIndex];
       const typeLabel = vType === "carros" ? "carro" : "moto";
 
-      const marcas = await fetchJson(`${BASE_URL}/${vType}/marcas`);
-      if (!marcas || marcas.error) break; // Retry later if API is down
+      if (!cachedMarcas[vType]) {
+        const fetchM = await fetchJson(`${BASE_URL}/${vType}/marcas`);
+        if (!fetchM || fetchM.error) break;
+        cachedMarcas[vType] = fetchM;
+      }
+      const marcas = cachedMarcas[vType];
 
       if (state.brandIndex >= marcas.length) {
         state.brandIndex = 0;
@@ -150,11 +156,13 @@ export async function GET(req: NextRequest) {
               name: v.nome, // ex: "2022 Gasolina"
               year: v.nome.split(" ")[0], // ex: "2022"
               fuelType: v.nome.split(" ")[1] || "N/D",
+              slug: slugify(v.nome) + "-" + modelId,
+              code: v.codigo
            }
         });
 
         if (versionsToInsert.length > 0) {
-           await db.insert(schema.carVersions).values(versionsToInsert).onConflictDoNothing().run();
+          await db.insert(schema.carVersions).values(versionsToInsert).onConflictDoNothing().run();
         }
       }
 
