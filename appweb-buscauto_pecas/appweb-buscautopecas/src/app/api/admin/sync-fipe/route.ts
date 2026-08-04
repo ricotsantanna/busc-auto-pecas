@@ -4,6 +4,8 @@ import { schema } from "@/db";
 import { eq } from "drizzle-orm";
 import { crypto } from "@/lib/crypto-polyfill";
 
+export const runtime = "edge";
+
 const BASE_URL = "https://parallelum.com.br/fipe/api/v1";
 const VEHICLE_TYPES = ["carros", "motos"];
 // Limit time to 15 seconds to avoid Cloudflare Worker timeout
