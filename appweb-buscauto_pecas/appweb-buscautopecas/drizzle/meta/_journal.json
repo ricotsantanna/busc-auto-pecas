@@ -8,6 +8,13 @@
       "when": 1785802310918,
       "tag": "0000_illegal_kat_farrell",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1785804707873,
+      "tag": "0001_abnormal_namor",
+      "breakpoints": true
     }
   ]
 }

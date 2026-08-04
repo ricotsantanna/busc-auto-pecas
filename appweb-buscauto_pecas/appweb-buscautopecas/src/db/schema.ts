@@ -127,6 +127,7 @@ export const masterParts = sqliteTable(
     position: text("position").default("N/A"), // ex: Dianteira, Traseira, Esquerda, Direita, N/A
     description: text("description"),
     imageUrl: text("image_url"),
+    isApproved: integer("is_approved", { mode: "boolean" }).notNull().default(false),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },

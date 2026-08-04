@@ -29,6 +29,12 @@ export default function LojistaEstoque() {
   const [searching, setSearching] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   
+  // AI Request State
+  const [isAiModalOpen, setIsAiModalOpen] = useState(false);
+  const [aiRawText, setAiRawText] = useState("");
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiResult, setAiResult] = useState<any>(null);
+
   // Modal State
   const [selectedPart, setSelectedPart] = useState<Part | null>(null);
   const [price, setPrice] = useState("");
@@ -123,7 +129,43 @@ export default function LojistaEstoque() {
   };
 
   const requestAI = () => {
-    alert("Função em desenvolvimento: Integração Cloudflare AI para leitura automática do nome da peça em breve!");
+    setIsAiModalOpen(true);
+    setAiRawText(query); // pre-fill with what they typed
+  };
+
+  const handleAiSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!aiRawText.trim()) return;
+
+    setAiLoading(true);
+    try {
+      const res = await fetch("/api/lojista/ai/parse-part", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ rawText: aiRawText }),
+      });
+      const data = await res.json();
+      
+      if (res.ok) {
+        // AI successfully parsed and added to masterParts (unapproved)
+        // Now open the regular offer modal with this part
+        setIsAiModalOpen(false);
+        setAiRawText("");
+        setSelectedPart({
+          id: data.partId,
+          name: data.extractedData.nomeDaPeca,
+          manufacturer: data.extractedData.fabricante,
+          partNumber: data.extractedData.codigoPeca,
+        });
+      } else {
+        alert(data.error || "Erro ao processar com IA");
+      }
+    } catch (e) {
+      console.error(e);
+      alert("Erro de comunicação com o servidor.");
+    } finally {
+      setAiLoading(false);
+    }
   };
 
   return (
@@ -311,6 +353,54 @@ export default function LojistaEstoque() {
                 >
                   {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                   Confirmar Anúncio
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+      {/* Modal Inteligência Artificial */}
+      {isAiModalOpen && (
+        <div className="fixed inset-0 bg-slate-900/50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full overflow-hidden">
+            <div className="p-6 border-b border-slate-100 bg-slate-900 text-white flex items-center">
+              <Sparkles className="w-5 h-5 text-yellow-400 mr-2" />
+              <h3 className="text-lg font-bold">Assistente IA</h3>
+            </div>
+            
+            <form onSubmit={handleAiSubmit} className="p-6 space-y-4">
+              <p className="text-sm text-slate-600">
+                Descreva a peça como você costuma chamar. Nossa Inteligência Artificial vai identificar o nome oficial, fabricante e código para organizar o catálogo automaticamente.
+              </p>
+              <div>
+                <textarea 
+                  required
+                  rows={3}
+                  value={aiRawText}
+                  onChange={e => setAiRawText(e.target.value)}
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 text-sm" 
+                  placeholder="Ex: Parachoque dianteiro gol g4 2008 sem farol de milha fabricante plastparts" 
+                />
+              </div>
+
+              <div className="pt-4 flex gap-3 justify-end border-t mt-6">
+                <button 
+                  type="button" 
+                  onClick={() => setIsAiModalOpen(false)}
+                  className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-lg font-medium transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button 
+                  type="submit" 
+                  disabled={aiLoading}
+                  className="px-4 py-2 bg-slate-900 text-white rounded-lg font-medium hover:bg-slate-800 transition-colors disabled:opacity-50 flex items-center"
+                >
+                  {aiLoading ? (
+                    <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Analisando...</>
+                  ) : (
+                    <><Sparkles className="w-4 h-4 mr-2 text-yellow-400" /> Processar Texto</>
+                  )}
                 </button>
               </div>
             </form>

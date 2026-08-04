@@ -1,0 +1,1 @@
+ALTER TABLE `master_parts` ADD `is_approved` integer DEFAULT false NOT NULL;
