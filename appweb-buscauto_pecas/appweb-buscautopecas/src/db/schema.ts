@@ -159,12 +159,31 @@ export const partCompatibility = sqliteTable(
 );
 
 // ============================================================
-// 7) STORES — Lojas físicas parceiras
+// 7) COMPANIES — Empresa Mãe (Lojista)
+// ============================================================
+export const companies = sqliteTable(
+  "companies",
+  {
+    id: uuid(),
+    cnpj: text("cnpj").notNull().unique(),
+    name: text("name").notNull(),
+    email: text("email").notNull().unique(),
+    passwordHash: text("password_hash").notNull(),
+    activePlan: text("active_plan").default("TRIAL"), // ex: TRIAL, BÁSICO, PROFISSIONAL
+    createdAt: createdAt(),
+  }
+);
+
+// ============================================================
+// 8) STORES — Lojas físicas parceiras (Filiais)
 // ============================================================
 export const stores = sqliteTable(
   "stores",
   {
     id: uuid(),
+    companyId: text("company_id")
+      .notNull()
+      .references(() => companies.id, { onDelete: "cascade" }),
     name: text("name").notNull(),
     address: text("address").notNull(),
     city: text("city").notNull(),
@@ -181,7 +200,7 @@ export const stores = sqliteTable(
 );
 
 // ============================================================
-// 8) STORE_OFFERS — Oferta do lojista (preço + estoque + condição)
+// 9) STORE_OFFERS — Oferta do lojista (preço + estoque + condição)
 // ============================================================
 // Enum simulado via CHECK constraint (D1/SQLite não tem ENUM nativo).
 export const OFFER_CONDITIONS = ["NOVO", "USADO"] as const;
@@ -251,6 +270,10 @@ export const categoriesRelations = relations(categories, ({ many }) => ({
   parts: many(masterParts),
 }));
 
+export const companiesRelations = relations(companies, ({ many }) => ({
+  stores: many(stores),
+}));
+
 export const masterPartsRelations = relations(masterParts, ({ one, many }) => ({
   category: one(categories, {
     fields: [masterParts.categoryId],
@@ -274,7 +297,11 @@ export const partCompatibilityRelations = relations(
   })
 );
 
-export const storesRelations = relations(stores, ({ many }) => ({
+export const storesRelations = relations(stores, ({ one, many }) => ({
+  company: one(companies, {
+    fields: [stores.companyId],
+    references: [companies.id],
+  }),
   offers: many(storeOffers),
 }));
 

@@ -40,6 +40,18 @@ CREATE TABLE `categories` (
 );
 --> statement-breakpoint
 CREATE UNIQUE INDEX `categories_slug_unique` ON `categories` (`slug`);--> statement-breakpoint
+CREATE TABLE `companies` (
+	`id` text PRIMARY KEY NOT NULL,
+	`cnpj` text NOT NULL,
+	`name` text NOT NULL,
+	`email` text NOT NULL,
+	`password_hash` text NOT NULL,
+	`active_plan` text DEFAULT 'TRIAL',
+	`created_at` integer DEFAULT (unixepoch()) NOT NULL
+);
+--> statement-breakpoint
+CREATE UNIQUE INDEX `companies_cnpj_unique` ON `companies` (`cnpj`);--> statement-breakpoint
+CREATE UNIQUE INDEX `companies_email_unique` ON `companies` (`email`);--> statement-breakpoint
 CREATE TABLE `master_parts` (
 	`id` text PRIMARY KEY NOT NULL,
 	`name` text NOT NULL,
@@ -89,6 +101,7 @@ CREATE INDEX `store_offers_price_idx` ON `store_offers` (`price`);--> statement-
 CREATE INDEX `store_offers_part_idx` ON `store_offers` (`part_id`);--> statement-breakpoint
 CREATE TABLE `stores` (
 	`id` text PRIMARY KEY NOT NULL,
+	`company_id` text NOT NULL,
 	`name` text NOT NULL,
 	`address` text NOT NULL,
 	`city` text NOT NULL,
@@ -96,7 +109,8 @@ CREATE TABLE `stores` (
 	`whatsapp` text NOT NULL,
 	`logo_url` text,
 	`rating` real DEFAULT 0,
-	`created_at` integer DEFAULT (unixepoch()) NOT NULL
+	`created_at` integer DEFAULT (unixepoch()) NOT NULL,
+	FOREIGN KEY (`company_id`) REFERENCES `companies`(`id`) ON UPDATE no action ON DELETE cascade
 );
 --> statement-breakpoint
 CREATE INDEX `stores_name_idx` ON `stores` (`name`);--> statement-breakpoint

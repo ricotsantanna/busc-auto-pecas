@@ -119,10 +119,15 @@ for (const c of partCompatibilities) {
   sqlContent += `INSERT INTO part_compatibility (part_id, version_id) VALUES (${escapeStr(c.partId)}, ${escapeStr(c.versionId)});\n`;
 }
 
+// Company
+const companyId = crypto.randomUUID();
+sqlContent += `\n-- Company\n`;
+sqlContent += `INSERT INTO companies (id, cnpj, name, email, password_hash, active_plan) VALUES ('${companyId}', '12345678000199', 'Lojas Fictícias Rede', 'contato@rede.com', 'dummy_hash', 'PROFISSIONAL');\n`;
+
 // Stores
 sqlContent += `\n-- Stores\n`;
 for (const s of stores) {
-  sqlContent += `INSERT INTO stores (id, name, address, city, state, whatsapp, rating) VALUES (${escapeStr(s.id)}, ${escapeStr(s.name)}, ${escapeStr(s.address)}, ${escapeStr(s.city)}, ${escapeStr(s.state)}, ${escapeStr(s.whatsapp)}, ${s.rating});\n`;
+  sqlContent += `INSERT INTO stores (id, company_id, name, address, city, state, whatsapp, rating) VALUES (${escapeStr(s.id)}, '${companyId}', ${escapeStr(s.name)}, ${escapeStr(s.address)}, ${escapeStr(s.city)}, ${escapeStr(s.state)}, ${escapeStr(s.whatsapp)}, ${s.rating});\n`;
 }
 
 // Offers
