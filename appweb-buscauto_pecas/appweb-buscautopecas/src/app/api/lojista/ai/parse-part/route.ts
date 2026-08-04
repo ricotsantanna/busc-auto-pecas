@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
     // 1. Verify user
     await getAuthContext();
 
-    const { rawText } = await req.json();
+    const { rawText } = (await req.json()) as { rawText: string };
 
     if (!rawText || rawText.trim() === "") {
       return NextResponse.json({ error: "Texto vazio" }, { status: 400 });
@@ -73,7 +73,7 @@ export async function POST(req: NextRequest) {
         throw new Error("Erro na API de Inteligência Artificial");
       }
 
-      const aiResult = await aiResponse.json();
+      const aiResult = (await aiResponse.json()) as any;
       const responseText = aiResult.result.response;
       
       // Clean up the text in case Llama returned markdown formatting
