@@ -14,7 +14,7 @@ export type DB = DrizzleD1Database<typeof schema>;
  * Tenta obter o binding D1 do request context do Cloudflare.
  * Retorna null se estivermos fora do runtime CF (ex.: `next dev` local).
  */
-async function getD1(): Promise<D1Database | null> {
+export async function getD1(): Promise<any | null> {
   try {
     // webpackIgnore: import resolvido apenas em produ\u00e7\u00e3o na Cloudflare Pages.
     // Em `next dev` local esse pacote pode n\u00e3o estar instalado \u2014 caimos no fallback mock.

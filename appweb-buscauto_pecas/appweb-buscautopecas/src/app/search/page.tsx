@@ -20,7 +20,6 @@ import {
   History,
   Sparkles,
 } from "lucide-react";
-import { localOffersAsSearchOffers } from "@/lib/local-inventory";
 import {
   Drawer,
   DrawerClose,
@@ -196,21 +195,8 @@ function SearchInner() {
     async function load() {
       const res = await fetch(url);
       const d: SearchResponse = await res.json();
-      // Mescla ofertas locais (cadastradas via /inventory) fazendo o mesmo
-      // filtro por termo `q` no nome / c\u00f3digo.
-      const qn = q.toLowerCase().trim();
-      const locals = localOffersAsSearchOffers()
-        .map((o) => ({ ...o, isLocal: true }))
-        .filter((o) => {
-          if (!qn) return true;
-          return (
-            o.partName.toLowerCase().includes(qn) ||
-            o.partCode.toLowerCase().includes(qn) ||
-            o.categoryName.toLowerCase().includes(qn)
-          );
-        });
-
-      const merged = [...d.offers, ...locals].sort((a, b) => a.price - b.price);
+      
+      const merged = d.offers || [];
       const cities = Array.from(
         new Set(merged.map((o) => `${o.storeCity}/${o.storeState}`))
       ).sort();
@@ -475,8 +461,8 @@ function OfferCard({
 
   return (
     <li
-      className={`bg-white rounded-2xl ring-1 p-5 hover:shadow-md transition ${
-        isBest ? "ring-emerald-300 shadow-emerald-100/60 shadow" : "ring-slate-200"
+      className={`bg-white/90 backdrop-blur-md rounded-2xl ring-1 p-5 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 ${
+        isBest ? "ring-emerald-400 shadow-emerald-200/50 shadow-lg" : "ring-slate-200/60"
       }`}
     >
       <div className="flex flex-col md:flex-row md:items-center gap-4">
@@ -552,29 +538,26 @@ function OfferCard({
         </div>
 
         {/* Preço + CTA */}
-        <div className="md:w-64 flex flex-col justify-between md:items-end items-start gap-4 mt-2 md:mt-0 pt-4 md:pt-0 border-t border-slate-100 md:border-none">
-          <div className="text-left md:text-right w-full flex items-center justify-between md:block">
-            <div className="text-sm font-semibold text-brand-muted md:hidden">Preço à vista</div>
-            <div className="text-right">
-              <div className="text-3xl font-extrabold text-brand-ink leading-none">
-                {formatBRL(offer.price)}
+        {/* Preço e Call to Action (Zap) */}
+          <div className="flex flex-col gap-2 items-end">
+            {savingsPct > 0 && (
+              <div className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded animate-pulse">
+                {savingsPct}% mais barato que a média!
               </div>
-              {savingsPct >= 5 && (
-                <div className="text-xs mt-1 font-semibold text-emerald-600">
-                  Economia de {savingsPct}% vs. média
-                </div>
-              )}
+            )}
+            <div className="text-2xl font-black text-brand-ink">
+              {formatBRL(offer.price)}
             </div>
+            <a
+              href={buildWhatsAppUrl(offer)}
+              target="_blank"
+              rel="noreferrer"
+              className="flex items-center justify-center gap-2 h-11 px-5 rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 text-white font-bold shadow-md shadow-emerald-500/30 hover:shadow-emerald-500/50 hover:scale-105 active:scale-95 transition-all w-full md:w-auto"
+            >
+              <MessageCircle className="h-5 w-5" />
+              Chamar no Zap
+            </a>
           </div>
-          <a
-            href={buildWhatsAppUrl(offer)}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center justify-center gap-2 h-12 md:h-11 px-5 rounded-xl md:rounded-lg bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700 text-white font-semibold shadow-sm transition w-full md:w-auto text-lg md:text-base"
-          >
-            <MessageCircle className="h-5 md:h-4 w-5 md:w-4" /> WhatsApp
-          </a>
-        </div>
       </div>
     </li>
   );
