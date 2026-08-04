@@ -98,7 +98,8 @@ export async function POST(req: NextRequest) {
           id: partId,
           name: parsedData.nomeDaPeca,
           manufacturer: parsedData.fabricante,
-          partNumber: parsedData.codigoPeca,
+          manufacturerCode: parsedData.codigoPeca,
+          categoryId: "c-1", // Categoria Genérica (Motor) - Ajustar depois
           description: `Extraído via IA do texto original: "${rawText}"`,
           isApproved: false, // Needs admin approval!
         });
