@@ -42,6 +42,7 @@ export const brands = sqliteTable(
     name: text("name").notNull(),
     slug: text("slug").notNull(),
     logoUrl: text("logo_url"),
+    vehicleType: text("vehicle_type").notNull().default("carro"), // carro, moto, caminhao
     createdAt: createdAt(),
   },
   (t) => ({
