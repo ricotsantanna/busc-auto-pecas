@@ -6,6 +6,7 @@
 // aplicação funcionando sem precisar rodar `wrangler pages dev`.
 
 import { drizzle, type DrizzleD1Database } from "drizzle-orm/d1";
+import { getRequestContext } from "@cloudflare/next-on-pages";
 import * as schema from "./schema";
 
 export type DB = DrizzleD1Database<typeof schema>;
@@ -16,15 +17,9 @@ export type DB = DrizzleD1Database<typeof schema>;
  */
 export async function getD1(): Promise<any | null> {
   try {
-    // webpackIgnore: import resolvido apenas em produ\u00e7\u00e3o na Cloudflare Pages.
-    // Em `next dev` local esse pacote pode n\u00e3o estar instalado \u2014 caimos no fallback mock.
-    const mod: any =
-      await import(/* webpackIgnore: true */ "@cloudflare/next-on-pages").catch(
-        () => ({})
-      );
-    if (!mod.getRequestContext) return null;
-    const ctx = mod.getRequestContext();
-    return (ctx.env as { DB?: D1Database }).DB ?? null;
+    const ctx = getRequestContext();
+    if (!ctx) return null;
+    return (ctx.env as { DB?: any }).DB ?? null;
   } catch {
     return null;
   }
