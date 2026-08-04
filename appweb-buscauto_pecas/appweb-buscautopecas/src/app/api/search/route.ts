@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getD1, schema } from "@/db";
+import { getDb, schema } from "@/db";
 import { eq, or, like, and, desc, asc } from "drizzle-orm";
 import { mockCallback } from "@/db/index";
 import { generateSearchResults } from "@/db/mock-offers";
@@ -13,10 +13,10 @@ export async function GET(req: NextRequest) {
   const model = sp.get("model") ?? undefined;
   const version = sp.get("version") ?? undefined;
 
-  const db = getD1();
-
-  // If no DB configured, fallback to mock (for local dev without wrangler)
-  if (!db) {
+  let db;
+  try {
+    db = await getDb();
+  } catch (err) {
     return NextResponse.json(generateSearchResults(q, brand, model, version), {
       headers: { "Cache-Control": "public, max-age=30, s-maxage=60" },
     });

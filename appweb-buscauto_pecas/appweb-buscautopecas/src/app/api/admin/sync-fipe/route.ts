@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getD1 } from "@/db";
+import { getDb } from "@/db";
 import { schema } from "@/db";
 import { eq } from "drizzle-orm";
 import { crypto } from "@/lib/crypto-polyfill";
@@ -45,9 +45,10 @@ export async function GET(req: NextRequest) {
   }
 
   const startTime = Date.now();
-  const db = getD1();
-
-  if (!db) {
+  let db;
+  try {
+    db = await getDb();
+  } catch (err) {
     return NextResponse.json({ error: "D1 database not available" }, { status: 500 });
   }
 
