@@ -90,19 +90,21 @@ export async function POST(req: NextRequest) {
     }
 
     // 3. Save as unapproved part in the database
-    const partId = crypto.randomUUID();
+    let partId = crypto.randomUUID();
     
     await withDbOrMock(
       async (db) => {
-        await db.insert(schema.masterParts).values({
-          id: partId,
+        const inserted = await db.insert(schema.masterParts).values({
           name: parsedData.nomeDaPeca,
           manufacturer: parsedData.fabricante,
           manufacturerCode: parsedData.codigoPeca,
           categoryId: "c-1", // Categoria Genérica (Motor) - Ajustar depois
           description: `Extraído via IA do texto original: "${rawText}"`,
           isApproved: false, // Needs admin approval!
-        });
+        }).returning({ id: schema.masterParts.id });
+        if (inserted.length > 0) {
+          partId = inserted[0].id;
+        }
       },
       () => { console.log("Mock db insert for AI part") }
     );
