@@ -1,0 +1,1 @@
+ALTER TABLE `brands` ADD `vehicle_type` text DEFAULT 'carro' NOT NULL;

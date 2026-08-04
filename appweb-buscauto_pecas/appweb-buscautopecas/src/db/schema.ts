@@ -332,3 +332,15 @@ export type MasterPart = typeof masterParts.$inferSelect;
 export type Store = typeof stores.$inferSelect;
 export type StoreOffer = typeof storeOffers.$inferSelect;
 export type NewStoreOffer = typeof storeOffers.$inferInsert;
+
+// ============================================================
+// 10) SYNC STATE - Estado do Robô (Cron Job) da Tabela FIPE
+// ============================================================
+export const syncState = sqliteTable(
+  "sync_state",
+  {
+    key: text("key").primaryKey(), // e.g. "fipe-sync"
+    value: text("value"), // JSON representation of state
+    updatedAt: updatedAt(),
+  }
+);

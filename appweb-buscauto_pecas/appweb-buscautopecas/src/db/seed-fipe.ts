@@ -67,10 +67,10 @@ async function syncVehicleType(vehicleType: "carros" | "motos", targetBrands: st
         const yearPart = ano.codigo.split("-")[0];
         const isZeroKm = yearPart === "32000";
         const yearNum = isZeroKm ? new Date().getFullYear() : parseInt(yearPart, 10);
-        const fuelType = ano.nome.split(" ").slice(1).join(" ") || "N/A";
+        const versionName = ano.nome;
         const versionId = crypto.randomUUID();
 
-        sqlQueries += `INSERT INTO car_versions (id, model_id, name, year, fuel_type) VALUES ('${versionId}', (SELECT id FROM car_models WHERE slug = '${modelSlug}'), '${escapeSql(ano.nome)}', ${yearNum}, '${escapeSql(fuelType)}') ON CONFLICT DO NOTHING;\n`;
+        sqlQueries += `INSERT INTO car_versions (id, model_id, version_name, year, engine) VALUES ('${versionId}', (SELECT id FROM car_models WHERE slug = '${modelSlug}'), '${escapeSql(versionName)}', ${yearNum}, 'N/A') ON CONFLICT DO NOTHING;\n`;
       }
       
       console.log(`  -> Modelo ${modelo.nome} salvo com ${anosData.length} versões.`);

@@ -81,9 +81,10 @@ export default function HomePage() {
 
     (async () => {
       try {
-        const res = await fetch(`/api/brands?type=${segment}`);
-        const data: any = await res.json();
-        setBrands(data.brands ?? []);
+        const fetchType = segment === "MOTO" ? "moto" : "carro";
+        const res = await fetch(`/api/fipe/brands?type=${fetchType}`);
+        const result: any = await res.json();
+        setBrands(result.data ?? []);
       } catch {
         setBrands([]);
       } finally {
@@ -115,9 +116,9 @@ export default function HomePage() {
     setLoadingModels(true);
     (async () => {
       try {
-        const res = await fetch(`/api/models?brand_id=${selectedBrand}`);
-        const data: any = await res.json();
-        setModels(data.models ?? []);
+        const res = await fetch(`/api/fipe/models?brandId=${selectedBrand}`);
+        const result: any = await res.json();
+        setModels(result.data ?? []);
       } finally {
         setLoadingModels(false);
       }
@@ -132,9 +133,9 @@ export default function HomePage() {
     setLoadingVersions(true);
     (async () => {
       try {
-        const res = await fetch(`/api/versions?model_id=${selectedModel}`);
-        const data: any = await res.json();
-        setVersions(data.versions ?? []);
+        const res = await fetch(`/api/fipe/versions?modelId=${selectedModel}`);
+        const result: any = await res.json();
+        setVersions(result.data ?? []);
       } finally {
         setLoadingVersions(false);
       }

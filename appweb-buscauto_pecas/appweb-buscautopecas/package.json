@@ -8,7 +8,8 @@
         "dev:webpack": "next dev --hostname 0.0.0.0 --port 3000",
         "build": "next build",
         "start": "next start",
-        "pages:build": "npx @cloudflare/next-on-pages"
+        "pages:build": "npx @cloudflare/next-on-pages",
+        "sync:fipe:local": "curl -H \"Authorization: Bearer DEV_SECRET\" http://localhost:3000/api/admin/sync-fipe"
     },
     "dependencies": {
         "@hookform/resolvers": "5.1.1",
