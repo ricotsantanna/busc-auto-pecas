@@ -81,7 +81,11 @@ export default function HomePage() {
 
     (async () => {
       try {
-        const fetchType = segment === "MOTO" ? "moto" : "carro";
+        let fetchType = "carro";
+        if (segment === "MOTO") fetchType = "moto";
+        if (segment === "ELETRICO") fetchType = "eletrico";
+        if (segment === "AUTOPROPELIDO") fetchType = "autopropelido";
+        
         const res = await fetch(`/api/fipe/brands?type=${fetchType}`);
         const result: any = await res.json();
         setBrands(result.data ?? []);
