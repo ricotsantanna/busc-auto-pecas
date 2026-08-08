@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500" width="100%" height="100%">
+  <g fill="none" stroke-width="22" stroke-linecap="round">
+    <!-- Outer Dark Navy Swirl Ring -->
+    <ellipse cx="250" cy="250" rx="210" ry="190" stroke="#0B0E28" transform="rotate(-15 250 250)" />
+    <!-- Outer Vibrant Orange Swirl Ring -->
+    <ellipse cx="250" cy="250" rx="195" ry="175" stroke="#FF6B00" transform="rotate(25 250 250)" />
+    <!-- Middle Dark Navy Swirl Ring -->
+    <ellipse cx="250" cy="250" rx="175" ry="155" stroke="#0B0E28" transform="rotate(-40 250 250)" />
+    <!-- Inner Orange Swirl Ring -->
+    <ellipse cx="250" cy="250" rx="150" ry="135" stroke="#FF6B00" transform="rotate(45 250 250)" />
+    <!-- Core Dark Navy Swirl Ring -->
+    <ellipse cx="250" cy="250" rx="125" ry="115" stroke="#0B0E28" transform="rotate(-65 250 250)" />
+  </g>
+</svg>

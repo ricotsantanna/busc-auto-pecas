@@ -410,8 +410,20 @@ function SearchInner() {
           {/* LISTA DE OFERTAS */}
           <section>
             {loading && (
-              <div className="flex items-center gap-2 text-brand-muted text-sm py-10">
-                <Loader2 className="h-4 w-4 animate-spin" /> Buscando ofertas...
+              <div className="space-y-3">
+                {[...Array(4)].map((_, i) => (
+                  <div key={i} className="bg-white ring-1 ring-slate-200 rounded-2xl p-5 flex flex-col md:flex-row md:items-center gap-4 animate-pulse">
+                    <div className="flex-1 space-y-3">
+                      <div className="flex gap-2">
+                        <div className="h-6 w-16 bg-slate-100 rounded-md" />
+                        <div className="h-6 w-20 bg-slate-100 rounded-md" />
+                      </div>
+                      <div className="h-5 bg-slate-100 rounded w-2/3" />
+                      <div className="h-4 bg-slate-50 rounded w-1/3" />
+                    </div>
+                    <div className="w-32 h-12 bg-slate-100 rounded-xl" />
+                  </div>
+                ))}
               </div>
             )}
 
@@ -461,9 +473,10 @@ function OfferCard({
 
   return (
     <li
-      className={`bg-white/90 backdrop-blur-md rounded-2xl ring-1 p-5 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 ${
+      className={`bg-white/90 backdrop-blur-md rounded-2xl ring-1 p-5 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 animate-in fade-in slide-in-from-bottom-4 fill-mode-backwards ${
         isBest ? "ring-emerald-400 shadow-emerald-200/50 shadow-lg" : "ring-slate-200/60"
       }`}
+      style={{ animationDelay: `${rank * 100}ms` }}
     >
       <div className="flex flex-col md:flex-row md:items-center gap-4">
         {/* Info peça + loja */}

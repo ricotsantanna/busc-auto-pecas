@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDb, schema } from "@/db";
 import { eq, or, like, and, desc, asc } from "drizzle-orm";
-import { mockCallback } from "@/db/index";
-import { generateSearchResults } from "@/db/mock-offers";
 
 export const runtime = "edge";
 
@@ -13,14 +11,7 @@ export async function GET(req: NextRequest) {
   const model = sp.get("model") ?? undefined;
   const version = sp.get("version") ?? undefined;
 
-  let db;
-  try {
-    db = await getDb();
-  } catch (err) {
-    return NextResponse.json(generateSearchResults(q, brand, model, version), {
-      headers: { "Cache-Control": "public, max-age=30, s-maxage=60" },
-    });
-  }
+  const db = await getDb();
 
   try {
     const conditions = [];
