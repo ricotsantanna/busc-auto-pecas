@@ -6,8 +6,8 @@ import { crypto } from "@/lib/crypto-polyfill";
 
 export const runtime = "edge";
 
-const BASE_URL = "https://parallelum.com.br/fipe/api/v1";
-const VEHICLE_TYPES = ["carros", "motos"];
+const BASE_URL = "https://fipe.parallelum.com.br/api/v2";
+const VEHICLE_TYPES = ["cars", "motorcycles"];
 // Limit time to 5 seconds to avoid Cloudflare Worker CPU timeout
 const MAX_EXECUTION_TIME_MS = 5000;
 
@@ -17,7 +17,9 @@ async function fetchJson(url: string) {
   let retries = 3;
   while (retries > 0) {
     try {
-      const response = await fetch(url, { headers: { "User-Agent": "BuscAutoPecasBot/1.0" } });
+      const headers: Record<string, string> = { "User-Agent": "BuscAutoPecasBot/1.0" };
+      if (process.env.FIPE_API_KEY) headers["Authorization"] = `Bearer ${process.env.FIPE_API_KEY}`;
+      const response = await fetch(url, { headers });
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       return await response.json();
     } catch (error) {
@@ -94,10 +96,10 @@ export async function GET(req: NextRequest) {
       }
 
       const vType = VEHICLE_TYPES[state.typeIndex];
-      const typeLabel = vType === "carros" ? "carro" : "moto";
+      const typeLabel = vType === "cars" ? "carro" : "moto";
 
       if (!cachedMarcas[vType]) {
-        const fetchM = await fetchJson(`${BASE_URL}/${vType}/marcas`);
+        const fetchM = await fetchJson(`${BASE_URL}/${vType}/brands`);
         if (!fetchM || fetchM.error) break;
         cachedMarcas[vType] = fetchM;
       }
@@ -110,23 +112,21 @@ export async function GET(req: NextRequest) {
       }
 
       const marca = marcas[state.brandIndex];
-      const brandSlug = slugify(marca.nome) + "-" + typeLabel;
-      const brandId = `b-${marca.codigo}-${typeLabel}`; // Deterministic ID
+      const brandSlug = slugify(marca.name) + "-" + typeLabel;
+      const brandId = `b-${marca.code}-${typeLabel}`; // Deterministic ID
 
       // Insert Brand
       await db.insert(schema.brands).values({
         id: brandId,
-        name: marca.nome,
+        name: marca.name,
         slug: brandSlug,
         vehicleType: typeLabel as any,
       }).onConflictDoNothing().run();
 
-      const modelosData = await fetchJson(`${BASE_URL}/${vType}/marcas/${marca.codigo}/modelos`);
-      if (!modelosData || !modelosData.modelos) {
+      const modelos = await fetchJson(`${BASE_URL}/${vType}/brands/${marca.code}/models`);
+      if (!modelos || !Array.isArray(modelos)) {
          break;
       }
-
-      const modelos = modelosData.modelos;
 
       if (state.modelIndex >= modelos.length) {
         state.modelIndex = 0;
@@ -135,29 +135,29 @@ export async function GET(req: NextRequest) {
       }
 
       const modelo = modelos[state.modelIndex];
-      const modelSlug = slugify(modelo.nome) + "-" + typeLabel;
-      const modelId = `m-${modelo.codigo}-${typeLabel}`;
+      const modelSlug = slugify(modelo.name) + "-" + typeLabel;
+      const modelId = `m-${modelo.code}-${typeLabel}`;
 
       // Insert Model
       await db.insert(schema.carModels).values({
         id: modelId,
         brandId,
-        name: modelo.nome,
+        name: modelo.name,
         slug: modelSlug,
       }).onConflictDoNothing().run();
 
       // Fetch versions
-      const versoes = await fetchJson(`${BASE_URL}/${vType}/marcas/${marca.codigo}/modelos/${modelo.codigo}/anos`);
-      if (versoes) {
+      const versoes = await fetchJson(`${BASE_URL}/${vType}/brands/${marca.code}/models/${modelo.code}/years`);
+      if (versoes && Array.isArray(versoes)) {
         const versionsToInsert = versoes.map((v: any) => {
            return {
-              id: `v-${v.codigo}-${modelId}`,
+              id: `v-${v.code}-${modelId}`,
               modelId,
-              name: v.nome, // ex: "2022 Gasolina"
-              year: v.nome.split(" ")[0], // ex: "2022"
-              fuelType: v.nome.split(" ")[1] || "N/D",
-              slug: slugify(v.nome) + "-" + modelId,
-              code: v.codigo
+              name: v.name, // ex: "2022 Diesel"
+              year: v.name.split(" ")[0] ? parseInt(v.name.split(" ")[0]) : 0, // ex: 2022
+              fuelType: v.name.split(" ").slice(1).join(" ") || "N/D",
+              slug: slugify(v.name) + "-" + modelId,
+              code: v.code
            }
         });
 

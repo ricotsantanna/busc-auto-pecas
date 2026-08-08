@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { withDbOrMock, schema } from "@/db";
-import { eq } from "drizzle-orm";
+import { eq, asc, desc } from "drizzle-orm";
 
 export const runtime = "edge";
 
@@ -21,7 +21,9 @@ export async function GET(req: NextRequest) {
           versionName: schema.carVersions.versionName,
           year: schema.carVersions.year,
           engine: schema.carVersions.engine,
-        }).from(schema.carVersions).where(eq(schema.carVersions.modelId, modelId));
+        }).from(schema.carVersions)
+          .where(eq(schema.carVersions.modelId, modelId))
+          .orderBy(desc(schema.carVersions.year), asc(schema.carVersions.versionName));
       },
       () => {
         versionsData = [

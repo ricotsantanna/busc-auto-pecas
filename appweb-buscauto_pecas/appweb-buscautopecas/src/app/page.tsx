@@ -375,7 +375,9 @@ export default function HomePage() {
                   <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
                   <input
                     id="part"
+                    name="q"
                     type="text"
+                    autoComplete="on"
                     className="field pl-10"
                     placeholder="Ex.: pastilha de freio, farol, coxim do motor..."
                     value={partQuery}
