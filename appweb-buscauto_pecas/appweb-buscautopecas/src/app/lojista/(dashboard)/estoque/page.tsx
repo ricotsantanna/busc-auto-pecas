@@ -39,7 +39,7 @@ export default function LojistaEstoque() {
   const [selectedPart, setSelectedPart] = useState<Part | null>(null);
   const [price, setPrice] = useState("");
   const [quantity, setQuantity] = useState("1");
-  const [condition, setCondition] = useState("NOVA");
+  const [condition, setCondition] = useState("NOVO");
   const [saving, setSaving] = useState(false);
 
   // Debounce for search
@@ -51,7 +51,7 @@ export default function LojistaEstoque() {
 
   const fetchOffers = async () => {
     try {
-      const res = await fetch("/api/lojista/offers");
+      const res = await fetch("/api/seller/inventory");
       const data = await res.json();
       if (data.offers) setOffers(data.offers);
     } catch (e) {
@@ -77,7 +77,7 @@ export default function LojistaEstoque() {
 
     debounceRef.current = setTimeout(async () => {
       try {
-        const res = await fetch(`/api/lojista/parts/search?q=${encodeURIComponent(text)}`);
+        const res = await fetch(`/api/seller/parts/search?q=${encodeURIComponent(text)}`);
         const data = await res.json();
         setSuggestions(data.parts || []);
       } catch (e) {
@@ -100,7 +100,7 @@ export default function LojistaEstoque() {
 
     setSaving(true);
     try {
-      const res = await fetch("/api/lojista/offers", {
+      const res = await fetch("/api/seller/inventory/add", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -331,9 +331,8 @@ export default function LojistaEstoque() {
                     onChange={e => setCondition(e.target.value)}
                     className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 bg-white"
                   >
-                    <option value="NOVA">Nova</option>
-                    <option value="USADA">Usada (Desmanche)</option>
-                    <option value="RECONDICIONADA">Recondicionada</option>
+                    <option value="NOVO">Novo</option>
+                    <option value="USADO">Usado</option>
                   </select>
                 </div>
               </div>

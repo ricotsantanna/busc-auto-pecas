@@ -1,33 +1,52 @@
-import { NextResponse } from 'next/server'
-import type { NextRequest } from 'next/server'
-import { jwtVerify } from 'jose'
-
-const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET || "super_secret_dev_key");
+import { NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
+import { decryptJWT } from '@/lib/auth-edge';
 
 export async function middleware(request: NextRequest) {
-  const path = request.nextUrl.pathname;
+  const { pathname } = request.nextUrl;
 
-  // Only protect /lojista routes (excluding login and signup)
-  if (path.startsWith('/lojista')) {
-    if (path === '/lojista/login' || path === '/lojista/cadastro') {
-      return NextResponse.next();
-    }
+  // Rotas que queremos proteger: Dashboard do Lojista e APIs do Lojista
+  // Note que `/lojista/login` e `/lojista/cadastro` NÃO devem estar protegidos.
+  const isLojistaDashboard = pathname.startsWith('/lojista') && !pathname.startsWith('/lojista/login') && !pathname.startsWith('/lojista/cadastro');
+  const isSellerAPI = pathname.startsWith('/api/seller');
 
+  if (isLojistaDashboard || isSellerAPI) {
     const token = request.cookies.get('auth_token')?.value;
 
     if (!token) {
-      return NextResponse.redirect(new URL('/lojista/login', request.url));
+      if (isSellerAPI) {
+        return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
+      }
+      const loginUrl = new URL('/lojista/login', request.url);
+      return NextResponse.redirect(loginUrl);
     }
 
     try {
-      // Verify JWT token
-      await jwtVerify(token, JWT_SECRET);
-      return NextResponse.next();
+      const payload = await decryptJWT(token);
+      if (!payload) {
+        throw new Error('Invalid token');
+      }
+      
+      // Token é válido. Clona a requisição adicionando headers do usuário se necessário
+      const requestHeaders = new Headers(request.headers);
+      requestHeaders.set('x-user-company-id', payload.companyId);
+      if (payload.storeId) {
+        requestHeaders.set('x-user-store-id', payload.storeId);
+      }
+
+      return NextResponse.next({
+        request: {
+          headers: requestHeaders,
+        },
+      });
     } catch (error) {
-      // Invalid or expired token
-      const response = NextResponse.redirect(new URL('/lojista/login', request.url));
-      response.cookies.delete('auth_token');
-      return response;
+      // Token inválido ou expirado
+      request.cookies.delete('auth_token');
+      if (isSellerAPI) {
+        return NextResponse.json({ error: 'Token inválido ou expirado' }, { status: 401 });
+      }
+      const loginUrl = new URL('/lojista/login', request.url);
+      return NextResponse.redirect(loginUrl);
     }
   }
 
@@ -35,5 +54,14 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/lojista/:path*'],
-}
+  matcher: [
+    /*
+     * Match all request paths except for the ones starting with:
+     * - api/auth (auth endpoints)
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico (favicon file)
+     */
+    '/((?!api/auth|_next/static|_next/image|favicon.ico).*)',
+  ],
+};
