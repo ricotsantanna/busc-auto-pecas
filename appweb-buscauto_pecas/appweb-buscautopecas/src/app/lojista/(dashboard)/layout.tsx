@@ -25,9 +25,9 @@ export default function LojistaDashboardLayout({ children }: { children: ReactNo
             <Store className="w-5 h-5" />
             Lojas / Filiais
           </Link>
-          <Link href="/lojista/configuracoes" className="flex items-center gap-3 px-3 py-2 rounded-md hover:bg-slate-800 hover:text-white transition-colors">
+          <Link href="/lojista/perfil" className="flex items-center gap-3 px-3 py-2 rounded-md hover:bg-slate-800 hover:text-white transition-colors">
             <Settings className="w-5 h-5" />
-            Configurações
+            Perfil da Loja
           </Link>
         </nav>
 
