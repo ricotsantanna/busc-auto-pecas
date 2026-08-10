@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getDb } from "@/db";
-import { storeOffers } from "@/db/schema";
+import { storeOffers, partCompatibility } from "@/db/schema";
 import { getSession } from "@/lib/auth";
 import crypto from "crypto";
 import { and, eq } from "drizzle-orm";
@@ -13,10 +13,14 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
     }
 
-    const { partId, price, condition } = await req.json();
+    const { partId, price, condition, versionIds } = await req.json();
 
     if (!partId || price === undefined || !condition) {
       return NextResponse.json({ error: "Dados incompletos." }, { status: 400 });
+    }
+
+    if (!versionIds || !Array.isArray(versionIds) || versionIds.length === 0) {
+      return NextResponse.json({ error: "Você deve selecionar ao menos um veículo compatível com a peça." }, { status: 400 });
     }
 
     if (condition !== "NOVO" && condition !== "USADO") {
@@ -58,6 +62,15 @@ export async function POST(req: Request) {
       condition,
       inStock: true,
     });
+
+    // 2. Mapeamento Múltiplo de Veículos na part_compatibility
+    for (const versionId of versionIds) {
+      // Usamos insert or ignore (on conflict do nothing) pq outra loja já pode ter mapeado
+      await db.insert(partCompatibility).values({
+        partId,
+        versionId
+      }).onConflictDoNothing();
+    }
 
     return NextResponse.json({ success: true, offerId });
   } catch (error) {

@@ -17,6 +17,7 @@ import {
   Store as StoreIcon,
   TrendingDown,
   Wrench,
+  ChevronRight,
 } from "lucide-react";
 import { localOffersAsSearchOffers } from "@/lib/local-inventory";
 
@@ -48,6 +49,7 @@ type Payload = {
     basePrice: number;
   };
   offers: Offer[];
+  compatibleVehicles: Record<string, Record<string, { versionId: string, versionName: string, year: number, engine: string }[]>>;
   meta: {
     total: number;
     minPrice: number | null;
@@ -262,6 +264,42 @@ function PartDetailInner() {
                 compatibilidade com o vendedor pelo WhatsApp antes de finalizar.
               </div>
             </div>
+
+            {/* Catálogo Cruzado */}
+            <section className="mt-8">
+              <h2 className="text-lg font-bold text-brand-ink mb-3 flex items-center gap-2">
+                <Wrench className="h-5 w-5 text-brand-primary" />
+                Veículos Compatíveis
+              </h2>
+              <div className="bg-white rounded-2xl ring-1 ring-slate-200 overflow-hidden divide-y divide-slate-100">
+                {data.compatibleVehicles && Object.entries(data.compatibleVehicles).length > 0 ? (
+                  Object.entries(data.compatibleVehicles).map(([brand, models]) => (
+                    <div key={brand} className="p-4 md:p-6">
+                      <div className="font-bold text-brand-ink mb-3">{brand}</div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {Object.entries(models as any).map(([model, versions]: any) => (
+                          <div key={model} className="bg-slate-50 p-3 rounded-xl ring-1 ring-slate-200/60">
+                            <div className="font-semibold text-sm text-brand-ink">{model}</div>
+                            <ul className="mt-2 space-y-1">
+                              {versions.map((v: any) => (
+                                <li key={v.versionId} className="text-xs text-brand-muted flex items-center gap-1.5">
+                                  <ChevronRight className="h-3 w-3 text-brand-primary shrink-0" />
+                                  <span>{v.year} — {v.versionName} {v.engine}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="p-6 text-sm text-brand-muted text-center">
+                    Nenhum veículo mapeado para esta peça.
+                  </div>
+                )}
+              </div>
+            </section>
 
             {/* Lista de ofertas */}
             <section className="mt-8">

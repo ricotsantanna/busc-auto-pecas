@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import {
   Search,
@@ -64,6 +64,10 @@ export default function HomePage() {
   const [selectedModel, setSelectedModel] = useState<string>("");
   const [selectedVersion, setSelectedVersion] = useState<string>("");
   const [partQuery, setPartQuery] = useState<string>("");
+  const [partSuggestions, setPartSuggestions] = useState<string[]>([]);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [searchingParts, setSearchingParts] = useState(false);
+  const debounceRef = useRef<NodeJS.Timeout>();
 
   const [loadingBrands, setLoadingBrands] = useState(true);
   const [loadingModels, setLoadingModels] = useState(false);
@@ -145,6 +149,38 @@ export default function HomePage() {
       }
     })();
   }, [selectedModel]);
+
+  const handlePartSearch = (text: string) => {
+    setPartQuery(text);
+    
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    
+    if (text.length < 2) {
+      setPartSuggestions([]);
+      setIsDropdownOpen(false);
+      return;
+    }
+
+    setSearchingParts(true);
+    setIsDropdownOpen(true);
+
+    debounceRef.current = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/parts/search?q=${encodeURIComponent(text)}`);
+        const data = await res.json();
+        setPartSuggestions(data.parts || []);
+      } catch (e) {
+        console.error(e);
+      } finally {
+        setSearchingParts(false);
+      }
+    }, 300);
+  };
+
+  const handleSelectSuggestion = (suggestion: string) => {
+    setPartQuery(suggestion);
+    setIsDropdownOpen(false);
+  };
 
   const canSearch = useMemo(
     () => !!selectedVersion && partQuery.trim().length >= 2,
@@ -381,13 +417,46 @@ export default function HomePage() {
                     id="part"
                     name="q"
                     type="text"
-                    autoComplete="on"
+                    autoComplete="off"
                     className="field pl-10"
                     placeholder="Ex.: pastilha de freio, farol, coxim do motor..."
                     value={partQuery}
-                    onChange={(e) => setPartQuery(e.target.value)}
+                    onChange={(e) => handlePartSearch(e.target.value)}
+                    onFocus={() => {
+                      if (partSuggestions.length > 0) setIsDropdownOpen(true);
+                    }}
+                    onBlur={() => {
+                      // Delay hiding so clicks on suggestions register
+                      setTimeout(() => setIsDropdownOpen(false), 200);
+                    }}
                     disabled={!selectedVersion}
                   />
+                  {searchingParts && (
+                    <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-brand-primary animate-spin" />
+                  )}
+
+                  {/* Autocomplete Dropdown */}
+                  {isDropdownOpen && partQuery.length >= 2 && (
+                    <div className="absolute z-10 w-full mt-1 bg-white border border-slate-200 rounded-lg shadow-xl overflow-hidden max-h-60 overflow-y-auto">
+                      {partSuggestions.length > 0 ? (
+                        <ul className="divide-y divide-slate-100">
+                          {partSuggestions.map((suggestion, idx) => (
+                            <li 
+                              key={idx} 
+                              className="p-3 hover:bg-slate-50 cursor-pointer text-sm font-medium text-slate-700 transition-colors"
+                              onClick={() => handleSelectSuggestion(suggestion)}
+                            >
+                              {suggestion}
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <div className="p-3 text-center text-sm text-slate-500">
+                          {!searchingParts && "Nenhuma peça mestre encontrada."}
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
               <div className="flex items-end">

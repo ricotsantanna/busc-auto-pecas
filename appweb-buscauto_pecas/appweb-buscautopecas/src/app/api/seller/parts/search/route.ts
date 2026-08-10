@@ -1,46 +1,39 @@
-import { NextResponse } from "next/server";
-import { db } from "@/db";
-import { masterParts, categories } from "@/db/schema";
-import { like, or, eq } from "drizzle-orm";
-import { getSession } from "@/lib/auth";
+import { NextRequest, NextResponse } from "next/server";
+import { getDb, schema } from "@/db";
+import { like, or, desc, eq } from "drizzle-orm";
 
-export async function GET(req: Request) {
+export const runtime = "edge";
+
+export async function GET(req: NextRequest) {
+  const q = (req.nextUrl.searchParams.get("q") ?? "").trim();
+
+  if (q.length < 2) {
+    return NextResponse.json({ parts: [] });
+  }
+
   try {
-    const session = await getSession();
-    if (!session || !session.storeId) {
-      return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
-    }
-
-    const { searchParams } = new URL(req.url);
-    const q = searchParams.get("q");
-
-    if (!q || q.length < 2) {
-      return NextResponse.json({ parts: [] });
-    }
-
-    // Search masterParts by name, brand, or partNumber
-    const parts = await db
+    const db = await getDb();
+    const matches = await db
       .select({
-        id: masterParts.id,
-        name: masterParts.name,
-        manufacturer: masterParts.brand,
-        partNumber: masterParts.partNumber,
-        category: categories.name,
+        id: schema.masterParts.id,
+        name: schema.masterParts.name,
+        manufacturerCode: schema.masterParts.manufacturerCode,
+        categoryName: schema.categories.name,
       })
-      .from(masterParts)
-      .leftJoin(categories, eq(masterParts.categoryId, categories.id))
+      .from(schema.masterParts)
+      .leftJoin(schema.categories, eq(schema.masterParts.categoryId, schema.categories.id))
       .where(
         or(
-          like(masterParts.name, `%${q}%`),
-          like(masterParts.brand, `%${q}%`),
-          like(masterParts.partNumber, `%${q}%`)
+          like(schema.masterParts.name, `%${q}%`),
+          like(schema.masterParts.name, `%${q.toLowerCase()}%`),
+          like(schema.masterParts.name, `%${q.toUpperCase()}%`)
         )
       )
-      .limit(10);
-
-    return NextResponse.json({ parts });
+      .limit(15);
+    
+    return NextResponse.json({ parts: matches });
   } catch (error) {
-    console.error("Part search error:", error);
-    return NextResponse.json({ error: "Erro interno no servidor." }, { status: 500 });
+    console.error("Seller part search error:", error);
+    return NextResponse.json({ parts: [] });
   }
 }

@@ -28,7 +28,7 @@ export async function GET(req: NextRequest) {
 
     const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
 
-    const results = await db
+    let baseQuery = db
       .select({
         id: schema.storeOffers.id,
         partId: schema.masterParts.id,
@@ -50,13 +50,22 @@ export async function GET(req: NextRequest) {
       .from(schema.storeOffers)
       .innerJoin(schema.masterParts, eq(schema.storeOffers.partId, schema.masterParts.id))
       .innerJoin(schema.stores, eq(schema.storeOffers.storeId, schema.stores.id))
-      .leftJoin(schema.categories, eq(schema.masterParts.categoryId, schema.categories.id))
+      .leftJoin(schema.categories, eq(schema.masterParts.categoryId, schema.categories.id));
+
+    // STRICT MAPPING: Se o usuário selecionou uma versão, cruzamos obrigatoriamente
+    if (version) {
+      baseQuery = baseQuery.innerJoin(
+        schema.partCompatibility, 
+        and(
+          eq(schema.masterParts.id, schema.partCompatibility.partId),
+          eq(schema.partCompatibility.versionId, version)
+        )
+      ) as any;
+    }
+
+    const results = await baseQuery
       .where(whereClause)
       .orderBy(asc(schema.storeOffers.price));
-
-    // Optional: If FIPE version is provided, we *could* filter or boost by partCompatibility.
-    // For now, we return all text matches (Option B) to avoid empty states, 
-    // but in a production V2, we would sort compatible parts first.
 
     // Calculate metadata
     let minPrice = null;

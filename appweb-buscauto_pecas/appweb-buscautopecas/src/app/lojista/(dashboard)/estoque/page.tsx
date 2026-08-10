@@ -42,8 +42,84 @@ export default function LojistaEstoque() {
   const [condition, setCondition] = useState("NOVO");
   const [saving, setSaving] = useState(false);
 
+  // Modal State (Fase 3 - Step 2)
+  const [step, setStep] = useState<1 | 2>(1);
+  const [segment, setSegment] = useState<"CARRO" | "ELETRICO" | "MOTO" | "AUTOPROPELIDO">("CARRO");
+  const [brands, setBrands] = useState<any[]>([]);
+  const [models, setModels] = useState<any[]>([]);
+  const [versions, setVersions] = useState<any[]>([]);
+  const [selectedBrand, setSelectedBrand] = useState("");
+  const [selectedModel, setSelectedModel] = useState("");
+  const [selectedVersions, setSelectedVersions] = useState<string[]>([]);
+  const [loadingBrands, setLoadingBrands] = useState(false);
+  const [loadingModels, setLoadingModels] = useState(false);
+  const [loadingVersions, setLoadingVersions] = useState(false);
+
   // Debounce for search
   const debounceRef = useRef<NodeJS.Timeout>();
+
+  // Carrega montadoras
+  useEffect(() => {
+    setSelectedBrand("");
+    setSelectedModel("");
+    setBrands([]);
+    setModels([]);
+    setVersions([]);
+    setLoadingBrands(true);
+    (async () => {
+      try {
+        let fetchType = "carro";
+        if (segment === "MOTO") fetchType = "moto";
+        if (segment === "ELETRICO") fetchType = "eletrico";
+        if (segment === "AUTOPROPELIDO") fetchType = "autopropelido";
+        const res = await fetch(`/api/fipe/brands?type=${fetchType}`);
+        const result = await res.json();
+        setBrands(result.data ?? []);
+      } catch {
+        setBrands([]);
+      } finally {
+        setLoadingBrands(false);
+      }
+    })();
+  }, [segment]);
+
+  // Carrega modelos
+  useEffect(() => {
+    setSelectedModel("");
+    setModels([]);
+    setVersions([]);
+    if (!selectedBrand) return;
+    setLoadingModels(true);
+    (async () => {
+      try {
+        const res = await fetch(`/api/fipe/models?brandId=${selectedBrand}`);
+        const result = await res.json();
+        setModels(result.data ?? []);
+      } catch {
+        setModels([]);
+      } finally {
+        setLoadingModels(false);
+      }
+    })();
+  }, [selectedBrand]);
+
+  // Carrega versões
+  useEffect(() => {
+    setVersions([]);
+    if (!selectedModel) return;
+    setLoadingVersions(true);
+    (async () => {
+      try {
+        const res = await fetch(`/api/fipe/versions?modelId=${selectedModel}`);
+        const result = await res.json();
+        setVersions(result.data ?? []);
+      } catch {
+        setVersions([]);
+      } finally {
+        setLoadingVersions(false);
+      }
+    })();
+  }, [selectedModel]);
 
   useEffect(() => {
     fetchOffers();
@@ -92,11 +168,23 @@ export default function LojistaEstoque() {
     setSelectedPart(part);
     setQuery("");
     setIsDropdownOpen(false);
+    setStep(1);
+    setSelectedVersions([]);
   };
 
-  const handleSaveOffer = async (e: React.FormEvent) => {
+  const handleNextStep = (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedPart) return;
+    setStep(2);
+  };
+
+  const handleFinalizeOffer = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedPart) return;
+    if (selectedVersions.length === 0) {
+      alert("Selecione ao menos um veículo compatível.");
+      return;
+    }
 
     setSaving(true);
     try {
@@ -107,7 +195,8 @@ export default function LojistaEstoque() {
           partId: selectedPart.id,
           price: parseFloat(price.replace(",", ".")),
           stockQuantity: parseInt(quantity, 10),
-          condition
+          condition,
+          versionIds: selectedVersions
         }),
       });
       
@@ -115,6 +204,8 @@ export default function LojistaEstoque() {
         setSelectedPart(null);
         setPrice("");
         setQuantity("1");
+        setStep(1);
+        setSelectedVersions([]);
         fetchOffers();
       } else {
         const data = await res.json();
@@ -126,6 +217,14 @@ export default function LojistaEstoque() {
     } finally {
       setSaving(false);
     }
+  };
+
+  const toggleVersion = (versionId: string) => {
+    setSelectedVersions((prev) =>
+      prev.includes(versionId)
+        ? prev.filter((v) => v !== versionId)
+        : [...prev, versionId]
+    );
   };
 
   const requestAI = () => {
@@ -290,71 +389,187 @@ export default function LojistaEstoque() {
         </div>
       </div>
 
-      {/* Modal Definição de Preço */}
+      {/* Modal Definição de Preço e Compatibilidade (2 Etapas) */}
       {selectedPart && (
         <div className="fixed inset-0 bg-slate-900/50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full overflow-hidden">
-            <div className="p-6 border-b border-slate-100 bg-slate-50">
-              <h3 className="text-lg font-bold text-slate-900">Anunciar Peça</h3>
-              <p className="text-sm text-slate-500 mt-1">{selectedPart.name} - {selectedPart.manufacturer}</p>
+          <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full overflow-hidden">
+            <div className="p-6 border-b border-slate-100 bg-slate-50 flex justify-between items-center">
+              <div>
+                <h3 className="text-lg font-bold text-slate-900">
+                  {step === 1 ? "1. Anunciar Peça" : "2. Veículos Compatíveis"}
+                </h3>
+                <p className="text-sm text-slate-500 mt-1">{selectedPart.name} - {selectedPart.manufacturer}</p>
+              </div>
+              <div className="flex gap-2">
+                <span className={`w-3 h-3 rounded-full ${step === 1 ? 'bg-orange-500' : 'bg-slate-300'}`}></span>
+                <span className={`w-3 h-3 rounded-full ${step === 2 ? 'bg-orange-500' : 'bg-slate-300'}`}></span>
+              </div>
             </div>
             
-            <form onSubmit={handleSaveOffer} className="p-6 space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Preço de Venda (R$)</label>
-                <input 
-                  type="number" 
-                  step="0.01"
-                  required
-                  value={price}
-                  onChange={e => setPrice(e.target.value)}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500" 
-                  placeholder="0.00" 
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
+            {step === 1 ? (
+              <form onSubmit={handleNextStep} className="p-6 space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Qtd. em Estoque</label>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Preço de Venda (R$)</label>
                   <input 
                     type="number" 
+                    step="0.01"
                     required
-                    min="1"
-                    value={quantity}
-                    onChange={e => setQuantity(e.target.value)}
+                    value={price}
+                    onChange={e => setPrice(e.target.value)}
                     className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500" 
+                    placeholder="0.00" 
                   />
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Condição</label>
-                  <select 
-                    value={condition}
-                    onChange={e => setCondition(e.target.value)}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 bg-white"
-                  >
-                    <option value="NOVO">Novo</option>
-                    <option value="USADO">Usado</option>
-                  </select>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Qtd. em Estoque</label>
+                    <input 
+                      type="number" 
+                      required
+                      min="1"
+                      value={quantity}
+                      onChange={e => setQuantity(e.target.value)}
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500" 
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Condição</label>
+                    <select 
+                      value={condition}
+                      onChange={e => setCondition(e.target.value)}
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 bg-white"
+                    >
+                      <option value="NOVO">Novo</option>
+                      <option value="USADO">Usado</option>
+                    </select>
+                  </div>
                 </div>
-              </div>
 
-              <div className="pt-4 flex gap-3 justify-end border-t mt-6">
-                <button 
-                  type="button" 
-                  onClick={() => setSelectedPart(null)}
-                  className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-lg font-medium transition-colors"
-                >
-                  Cancelar
-                </button>
-                <button 
-                  type="submit" 
-                  disabled={saving}
-                  className="px-4 py-2 bg-orange-600 text-white rounded-lg font-medium hover:bg-orange-700 transition-colors disabled:opacity-50 flex items-center"
-                >
-                  {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                  Confirmar Anúncio
-                </button>
-              </div>
-            </form>
+                <div className="pt-4 flex gap-3 justify-end border-t mt-6">
+                  <button 
+                    type="button" 
+                    onClick={() => {
+                      setSelectedPart(null);
+                      setStep(1);
+                    }}
+                    className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-lg font-medium transition-colors"
+                  >
+                    Cancelar
+                  </button>
+                  <button 
+                    type="submit" 
+                    className="px-4 py-2 bg-orange-600 text-white rounded-lg font-medium hover:bg-orange-700 transition-colors flex items-center"
+                  >
+                    Avançar
+                  </button>
+                </div>
+              </form>
+            ) : (
+              <form onSubmit={handleFinalizeOffer} className="p-6 space-y-4">
+                <p className="text-sm text-slate-600 mb-4">
+                  Selecione todos os veículos (montadora, modelo e ano) que são compatíveis com esta peça.
+                </p>
+                <div className="grid grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Veículo</label>
+                    <select 
+                      value={segment} 
+                      onChange={(e) => setSegment(e.target.value as any)}
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 text-sm"
+                    >
+                      <option value="CARRO">Carros</option>
+                      <option value="MOTO">Motos</option>
+                      <option value="ELETRICO">Elétricos</option>
+                      <option value="AUTOPROPELIDO">Autopropelido</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Montadora</label>
+                    <select 
+                      value={selectedBrand} 
+                      onChange={(e) => setSelectedBrand(e.target.value)}
+                      disabled={loadingBrands || brands.length === 0}
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 text-sm disabled:bg-slate-100 disabled:opacity-75"
+                    >
+                      <option value="">{loadingBrands ? "Carregando..." : "Selecione..."}</option>
+                      {brands.map(b => (
+                        <option key={b.id} value={b.id}>{b.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Modelo</label>
+                    <select 
+                      value={selectedModel} 
+                      onChange={(e) => setSelectedModel(e.target.value)}
+                      disabled={!selectedBrand || loadingModels || models.length === 0}
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 text-sm disabled:bg-slate-100 disabled:opacity-75"
+                    >
+                      <option value="">{loadingModels ? "Carregando..." : "Selecione..."}</option>
+                      {models.map(m => (
+                        <option key={m.id} value={m.id}>{m.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                {selectedModel && (
+                  <div className="mt-6 border border-slate-200 rounded-lg overflow-hidden">
+                    <div className="bg-slate-50 px-4 py-2 border-b border-slate-200 flex justify-between items-center">
+                      <span className="text-sm font-medium text-slate-700">Versões / Anos</span>
+                      <span className="text-xs text-orange-600 font-medium bg-orange-100 px-2 py-1 rounded-full">
+                        {selectedVersions.length} selecionados
+                      </span>
+                    </div>
+                    <div className="p-4 max-h-60 overflow-y-auto grid grid-cols-1 sm:grid-cols-2 gap-3 bg-white">
+                      {loadingVersions ? (
+                        <div className="col-span-full py-4 text-center">
+                          <Loader2 className="w-5 h-5 mx-auto animate-spin text-orange-500" />
+                        </div>
+                      ) : versions.length > 0 ? (
+                        versions.map(v => (
+                          <label key={v.id} className="flex items-start gap-3 p-2 rounded hover:bg-slate-50 cursor-pointer border border-transparent hover:border-slate-100 transition-colors">
+                            <div className="flex-shrink-0 pt-0.5">
+                              <input 
+                                type="checkbox" 
+                                checked={selectedVersions.includes(v.id)}
+                                onChange={() => toggleVersion(v.id)}
+                                className="w-4 h-4 text-orange-600 rounded border-slate-300 focus:ring-orange-500"
+                              />
+                            </div>
+                            <div className="text-sm text-slate-700 select-none">
+                              {v.name}
+                            </div>
+                          </label>
+                        ))
+                      ) : (
+                        <div className="col-span-full text-center text-sm text-slate-500 py-4">
+                          Nenhuma versão encontrada.
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                <div className="pt-4 flex gap-3 justify-end border-t mt-6">
+                  <button 
+                    type="button" 
+                    onClick={() => setStep(1)}
+                    className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-lg font-medium transition-colors"
+                  >
+                    Voltar
+                  </button>
+                  <button 
+                    type="submit" 
+                    disabled={saving || selectedVersions.length === 0}
+                    className="px-4 py-2 bg-orange-600 text-white rounded-lg font-medium hover:bg-orange-700 transition-colors disabled:opacity-50 flex items-center"
+                  >
+                    {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                    Confirmar Anúncio
+                  </button>
+                </div>
+              </form>
+            )}
           </div>
         </div>
       )}

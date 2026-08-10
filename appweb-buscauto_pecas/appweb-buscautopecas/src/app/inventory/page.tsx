@@ -56,6 +56,10 @@ export default function InventoryPage() {
 
   const [toast, setToast] = useState<string | null>(null);
 
+  // ---------- estado cruzado ----------
+  const [compatibleVehicles, setCompatibleVehicles] = useState<Record<string, any> | null>(null);
+  const [loadingCompat, setLoadingCompat] = useState(false);
+
   // ---------- carregamento inicial ----------
   useEffect(() => {
     const sid = getSelectedStoreId();
@@ -72,6 +76,22 @@ export default function InventoryPage() {
     window.addEventListener("buscautopecas:offers-changed", h);
     return () => window.removeEventListener("buscautopecas:offers-changed", h);
   }, [storeId]);
+
+  useEffect(() => {
+    if (!selectedPart) {
+      setCompatibleVehicles(null);
+      return;
+    }
+    setLoadingCompat(true);
+    fetch(`/api/parts/${selectedPart.id}`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.compatibleVehicles) {
+          setCompatibleVehicles(data.compatibleVehicles);
+        }
+      })
+      .finally(() => setLoadingCompat(false));
+  }, [selectedPart]);
 
   const currentStore = useMemo(
     () => mockStores.find((s) => s.id === storeId) ?? mockStores[0],
@@ -200,20 +220,7 @@ export default function InventoryPage() {
               </div>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <label className="text-sm text-brand-muted">Alterar loja:</label>
-            <select
-              value={storeId}
-              onChange={(e) => changeStore(e.target.value)}
-              className="field h-10 !w-auto min-w-[220px]"
-            >
-              {mockStores.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.name} — {s.city}/{s.state}
-                </option>
-              ))}
-            </select>
-          </div>
+          {/* Dropdown removed as per user request to avoid exposing all stores */}
         </div>
       </div>
 
@@ -274,8 +281,30 @@ export default function InventoryPage() {
                       <div className="text-xs text-brand-muted mt-0.5">
                         {selectedPart.categoryName} • <span className="font-mono">{selectedPart.manufacturerCode}</span>
                       </div>
-                      <div className="text-[11px] text-brand-primary mt-1">
-                        Referência de preço médio: {formatBRL(selectedPart.basePrice)}
+                      
+                      {/* Cruzamento de dados */}
+                      <div className="mt-2 pt-2 border-t border-brand-primary/20">
+                        <div className="text-[11px] font-semibold text-brand-ink mb-1 flex items-center gap-1">
+                          <Wrench className="h-3 w-3" /> Serve em (Catálogo Cruzado):
+                        </div>
+                        {loadingCompat ? (
+                          <div className="text-[11px] text-brand-muted">Carregando compatibilidade...</div>
+                        ) : compatibleVehicles && Object.keys(compatibleVehicles).length > 0 ? (
+                          <div className="text-[11px] text-brand-muted leading-relaxed space-y-1">
+                            {Object.entries(compatibleVehicles).map(([brand, models]) => (
+                              <div key={brand}>
+                                <strong className="text-brand-ink">{brand}:</strong>{" "}
+                                {Object.entries(models as any).map(([model, versions]) => (
+                                  <span key={model}>
+                                    {model} ({(versions as any[]).map(v => `${v.year}`).join(", ")}),{" "}
+                                  </span>
+                                ))}
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="text-[11px] text-brand-muted">Nenhuma compatibilidade registrada.</div>
+                        )}
                       </div>
                     </div>
                     <button
@@ -573,7 +602,7 @@ function PartAutocomplete({
     }
     setLoading(true);
     const t = setTimeout(() => {
-      fetch(`/api/parts/search?q=${encodeURIComponent(q.trim())}`)
+      fetch(`/api/seller/parts/search?q=${encodeURIComponent(q.trim())}`)
         .then((r) => r.json())
         .then((d: any) => setItems(d.parts ?? []))
         .finally(() => setLoading(false));
