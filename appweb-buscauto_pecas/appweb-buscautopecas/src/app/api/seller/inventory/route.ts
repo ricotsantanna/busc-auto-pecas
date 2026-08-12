@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getDb, schema } from "@/db";
 export const runtime = "edge";
-import { storeOffers, masterParts } from "@/db/schema";
+import { storeOffers, masterParts, stores } from "@/db/schema";
 import { eq, desc, inArray } from "drizzle-orm";
 import { getSession } from "@/lib/auth-edge";
 
@@ -9,8 +9,22 @@ export async function GET(req: Request) {
   try {
     const db = await getDb();
     const session = await getSession();
-    if (!session || !session.storeId) {
+    if (!session || (!session.storeId && !session.companyId)) {
       return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
+    }
+
+    let storeId = session.storeId;
+    if (!storeId && session.companyId) {
+      const storeRows = await db
+        .select({ id: stores.id })
+        .from(stores)
+        .where(eq(stores.companyId, session.companyId))
+        .limit(1);
+      storeId = storeRows[0]?.id;
+    }
+
+    if (!storeId) {
+      return NextResponse.json({ inventory: [] });
     }
 
     // Busca todas as ofertas dessa loja (storeId) com as informações da peça mestre
@@ -19,8 +33,8 @@ export async function GET(req: Request) {
         offerId: storeOffers.id,
         partId: masterParts.id,
         partName: masterParts.name,
-        brand: masterParts.brand,
-        partNumber: masterParts.partNumber,
+        brand: masterParts.manufacturer,
+        partNumber: masterParts.manufacturerCode,
         price: storeOffers.price,
         condition: storeOffers.condition,
         inStock: storeOffers.inStock,
@@ -28,7 +42,7 @@ export async function GET(req: Request) {
       })
       .from(storeOffers)
       .innerJoin(masterParts, eq(storeOffers.partId, masterParts.id))
-      .where(eq(storeOffers.storeId, session.storeId))
+      .where(eq(storeOffers.storeId, storeId))
       .orderBy(desc(storeOffers.createdAt));
 
     // Busca compatibilidades de todas as peças no estoque

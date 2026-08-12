@@ -51,6 +51,7 @@ export default function LojistaEstoque() {
   const [versions, setVersions] = useState<any[]>([]);
   const [selectedBrand, setSelectedBrand] = useState("");
   const [selectedModel, setSelectedModel] = useState("");
+  const [selectedYear, setSelectedYear] = useState("");
   const [selectedVersions, setSelectedVersions] = useState<string[]>([]);
   const [loadingBrands, setLoadingBrands] = useState(false);
   const [loadingModels, setLoadingModels] = useState(false);
@@ -109,6 +110,7 @@ export default function LojistaEstoque() {
   // Carrega versões
   useEffect(() => {
     setVersions([]);
+    setSelectedYear("");
     if (!selectedModel) return;
     setLoadingVersions(true);
     (async () => {
@@ -548,13 +550,13 @@ export default function LojistaEstoque() {
                 <p className="text-sm text-slate-600 mb-4">
                   Selecione todos os veículos (montadora, modelo e ano) que são compatíveis com esta peça.
                 </p>
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                   <div>
                     <label className="block text-sm font-medium text-slate-700 mb-1">Veículo</label>
                     <select 
                       value={segment} 
                       onChange={(e) => setSegment(e.target.value as any)}
-                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 text-sm"
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 text-sm bg-white"
                     >
                       <option value="CARRO">Carros</option>
                       <option value="MOTO">Motos</option>
@@ -568,7 +570,7 @@ export default function LojistaEstoque() {
                       value={selectedBrand} 
                       onChange={(e) => setSelectedBrand(e.target.value)}
                       disabled={loadingBrands || brands.length === 0}
-                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 text-sm disabled:bg-slate-100 disabled:opacity-75"
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 text-sm bg-white disabled:bg-slate-100 disabled:opacity-75"
                     >
                       <option value="">{loadingBrands ? "Carregando..." : "Selecione..."}</option>
                       {brands.map(b => (
@@ -582,7 +584,7 @@ export default function LojistaEstoque() {
                       value={selectedModel} 
                       onChange={(e) => setSelectedModel(e.target.value)}
                       disabled={!selectedBrand || loadingModels || models.length === 0}
-                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 text-sm disabled:bg-slate-100 disabled:opacity-75"
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 text-sm bg-white disabled:bg-slate-100 disabled:opacity-75"
                     >
                       <option value="">{loadingModels ? "Carregando..." : "Selecione..."}</option>
                       {models.map(m => (
@@ -590,45 +592,96 @@ export default function LojistaEstoque() {
                       ))}
                     </select>
                   </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Ano do Modelo</label>
+                    <select 
+                      value={selectedYear} 
+                      onChange={(e) => setSelectedYear(e.target.value)}
+                      disabled={!selectedModel || loadingVersions || versions.length === 0}
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 text-sm bg-white disabled:bg-slate-100 disabled:opacity-75 font-medium"
+                    >
+                      <option value="">Todos os Anos</option>
+                      {Array.from(new Set(versions.map(v => v.year))).sort((a: any, b: any) => b - a).map(yr => (
+                        <option key={yr} value={String(yr)}>Ano {yr}</option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
 
-                {selectedModel && (
-                  <div className="mt-6 border border-slate-200 rounded-lg overflow-hidden">
-                    <div className="bg-slate-50 px-4 py-2 border-b border-slate-200 flex justify-between items-center">
-                      <span className="text-sm font-medium text-slate-700">Versões / Anos</span>
-                      <span className="text-xs text-orange-600 font-medium bg-orange-100 px-2 py-1 rounded-full">
-                        {selectedVersions.length} selecionados
-                      </span>
-                    </div>
-                    <div className="p-4 max-h-60 overflow-y-auto grid grid-cols-1 sm:grid-cols-2 gap-3 bg-white">
-                      {loadingVersions ? (
-                        <div className="col-span-full py-4 text-center">
-                          <Loader2 className="w-5 h-5 mx-auto animate-spin text-orange-500" />
+                {selectedModel && (() => {
+                  const filteredVersions = selectedYear 
+                    ? versions.filter(v => String(v.year) === selectedYear)
+                    : versions;
+                  const allFilteredSelected = filteredVersions.length > 0 && filteredVersions.every(v => selectedVersions.includes(v.id));
+
+                  const toggleAllFiltered = () => {
+                    const filteredIds = filteredVersions.map(v => v.id);
+                    if (allFilteredSelected) {
+                      setSelectedVersions(prev => prev.filter(id => !filteredIds.includes(id)));
+                    } else {
+                      setSelectedVersions(prev => Array.from(new Set([...prev, ...filteredIds])));
+                    }
+                  };
+
+                  return (
+                    <div className="mt-6 border border-slate-200 rounded-lg overflow-hidden">
+                      <div className="bg-slate-50 px-4 py-2.5 border-b border-slate-200 flex justify-between items-center flex-wrap gap-2">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-semibold text-slate-800">Versões Disponíveis</span>
+                          {selectedYear && (
+                            <span className="text-xs bg-blue-100 text-blue-800 font-medium px-2 py-0.5 rounded-full border border-blue-200">
+                              Ano {selectedYear}
+                            </span>
+                          )}
                         </div>
-                      ) : versions.length > 0 ? (
-                        versions.map(v => (
-                          <label key={v.id} className="flex items-start gap-3 p-2 rounded hover:bg-slate-50 cursor-pointer border border-transparent hover:border-slate-100 transition-colors">
-                            <div className="flex-shrink-0 pt-0.5">
-                              <input 
-                                type="checkbox" 
-                                checked={selectedVersions.includes(v.id)}
-                                onChange={() => toggleVersion(v.id)}
-                                className="w-4 h-4 text-orange-600 rounded border-slate-300 focus:ring-orange-500"
-                              />
-                            </div>
-                            <div className="text-sm text-slate-700 select-none">
-                              {v.name}
-                            </div>
-                          </label>
-                        ))
-                      ) : (
-                        <div className="col-span-full text-center text-sm text-slate-500 py-4">
-                          Nenhuma versão encontrada.
+                        <div className="flex items-center gap-3">
+                          {filteredVersions.length > 0 && (
+                            <button
+                              type="button"
+                              onClick={toggleAllFiltered}
+                              className="text-xs text-orange-600 font-medium hover:text-orange-800 transition-colors"
+                            >
+                              {allFilteredSelected ? "Desmarcar exibidos" : "Marcar todos exibidos"}
+                            </button>
+                          )}
+                          <span className="text-xs text-orange-600 font-medium bg-orange-100 px-2.5 py-1 rounded-full">
+                            {selectedVersions.length} selecionados
+                          </span>
                         </div>
-                      )}
+                      </div>
+                      <div className="p-4 max-h-60 overflow-y-auto grid grid-cols-1 sm:grid-cols-2 gap-2.5 bg-white">
+                        {loadingVersions ? (
+                          <div className="col-span-full py-4 text-center">
+                            <Loader2 className="w-5 h-5 mx-auto animate-spin text-orange-500" />
+                          </div>
+                        ) : filteredVersions.length > 0 ? (
+                          filteredVersions.map(v => (
+                            <label key={v.id} className="flex items-center justify-between p-2.5 rounded-lg hover:bg-orange-50 cursor-pointer border border-slate-200 bg-white transition-all shadow-sm hover:border-orange-200">
+                              <div className="flex items-center gap-3 min-w-0 pr-2">
+                                <input 
+                                  type="checkbox" 
+                                  checked={selectedVersions.includes(v.id)}
+                                  onChange={() => toggleVersion(v.id)}
+                                  className="w-4 h-4 text-orange-600 rounded border-slate-300 focus:ring-orange-500 flex-shrink-0"
+                                />
+                                <span className="text-sm font-medium text-slate-800 truncate">
+                                  {v.versionName || v.name}
+                                </span>
+                              </div>
+                              <span className="text-xs font-semibold px-2 py-0.5 rounded bg-slate-100 text-slate-600 border border-slate-200 flex-shrink-0">
+                                {v.year}
+                              </span>
+                            </label>
+                          ))
+                        ) : (
+                          <div className="col-span-full text-center text-sm text-slate-500 py-4">
+                            Nenhuma versão encontrada para o ano selecionado.
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                )}
+                  );
+                })()}
 
                 <div className="pt-4 flex gap-3 justify-end border-t mt-6">
                   <button 

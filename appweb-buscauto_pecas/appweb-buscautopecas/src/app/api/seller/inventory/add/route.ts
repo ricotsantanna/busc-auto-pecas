@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getDb } from "@/db";
 export const runtime = "edge";
-import { storeOffers, partCompatibility } from "@/db/schema";
+import { storeOffers, partCompatibility, stores } from "@/db/schema";
 import { getSession } from "@/lib/auth-edge";
 import { and, eq } from "drizzle-orm";
 
@@ -9,8 +9,22 @@ export async function POST(req: Request) {
   try {
     const db = await getDb();
     const session = await getSession();
-    if (!session || !session.storeId) {
+    if (!session || (!session.storeId && !session.companyId)) {
       return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
+    }
+
+    let storeId = session.storeId;
+    if (!storeId && session.companyId) {
+      const storeRows = await db
+        .select({ id: stores.id })
+        .from(stores)
+        .where(eq(stores.companyId, session.companyId))
+        .limit(1);
+      storeId = storeRows[0]?.id;
+    }
+
+    if (!storeId) {
+      return NextResponse.json({ error: "Loja não encontrada." }, { status: 404 });
     }
 
     const { partId, price, condition, versionIds } = await req.json();
@@ -37,7 +51,7 @@ export async function POST(req: Request) {
       .from(storeOffers)
       .where(
         and(
-          eq(storeOffers.storeId, session.storeId),
+          eq(storeOffers.storeId, storeId),
           eq(storeOffers.partId, partId),
           eq(storeOffers.condition, condition)
         )
@@ -45,7 +59,6 @@ export async function POST(req: Request) {
       .limit(1);
 
     if (existingOffer.length > 0) {
-      // Se existir, podemos retornar erro ou atualizar. Vamos retornar erro por simplicidade agora.
       return NextResponse.json(
         { error: `Você já possui uma oferta para esta peça na condição ${condition}.` },
         { status: 409 }
@@ -56,7 +69,7 @@ export async function POST(req: Request) {
 
     await db.insert(storeOffers).values({
       id: offerId,
-      storeId: session.storeId,
+      storeId,
       partId,
       price: Number(price),
       condition,
@@ -65,7 +78,6 @@ export async function POST(req: Request) {
 
     // 2. Mapeamento Múltiplo de Veículos na part_compatibility
     for (const versionId of versionIds) {
-      // Usamos insert or ignore (on conflict do nothing) pq outra loja já pode ter mapeado
       await db.insert(partCompatibility).values({
         partId,
         versionId

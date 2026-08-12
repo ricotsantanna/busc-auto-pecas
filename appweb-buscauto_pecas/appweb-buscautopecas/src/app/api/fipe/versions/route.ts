@@ -25,10 +25,9 @@ export async function GET(req: NextRequest) {
           .where(eq(schema.carVersions.modelId, modelId))
           .orderBy(desc(schema.carVersions.year), asc(schema.carVersions.versionName));
         
-        // Map to include 'name' field for frontend compatibility
         versionsData = rows.map(r => ({
           id: r.id,
-          name: `${r.versionName} ${r.year}${r.engine && r.engine !== 'N/A' ? ` (${r.engine})` : ''}`,
+          name: r.versionName,
           versionName: r.versionName,
           year: r.year,
           engine: r.engine,
@@ -36,7 +35,7 @@ export async function GET(req: NextRequest) {
       },
       () => {
         versionsData = [
-          { id: "v-palio-1", name: "Palio Fire 2014", versionName: "Palio Fire", year: 2014, engine: "N/A" }
+          { id: "v-palio-1", name: "Palio Fire", versionName: "Palio Fire", year: 2014, engine: "N/A" }
         ];
       }
     );
