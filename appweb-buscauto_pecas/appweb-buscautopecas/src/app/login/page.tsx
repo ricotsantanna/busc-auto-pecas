@@ -51,7 +51,7 @@ export default function MerchantLoginPage() {
     setTimeout(() => {
       setLoginLoading(false);
       // Redireciona para o Painel do Lojista
-      router.push("/inventory");
+      router.push("/lojista/estoque");
     }, 800);
   }
 
@@ -63,7 +63,7 @@ export default function MerchantLoginPage() {
       setRegLoading(false);
       setRegSuccess(true);
       setTimeout(() => {
-        router.push("/inventory");
+        router.push("/lojista/estoque");
       }, 1200);
     }, 900);
   }
