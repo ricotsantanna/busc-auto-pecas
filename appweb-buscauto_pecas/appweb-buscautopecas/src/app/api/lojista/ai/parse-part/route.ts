@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { withDbOrMock, schema } from "@/db";
 import { getSession } from "@/lib/auth-edge";
+import { eq } from "drizzle-orm";
 
 export const runtime = "edge";
 
@@ -71,27 +72,61 @@ export async function POST(req: NextRequest) {
       // MOCK FALLBACK: If API keys are not set, return a mock response for development
       console.warn("CLOUDFLARE_ACCOUNT_ID ou CLOUDFLARE_API_TOKEN não encontrados. Usando Mock IA.");
       parsedData = {
-        nomeDaPeca: "Peça Genérica Extraída (Mock)",
+        nomeDaPeca: rawText.charAt(0).toUpperCase() + rawText.slice(1),
         fabricante: "Desconhecido",
         codigoPeca: "N/A"
       };
     }
 
-    // 3. Save as unapproved part in the database
+    // Ensure unique code for master_parts constraint
+    let code = parsedData.codigoPeca;
+    if (!code || code === "N/A" || code === "Desconhecido") {
+      code = `IA-${crypto.randomUUID().substring(0, 8).toUpperCase()}`;
+    }
+
     let partId = crypto.randomUUID();
     
     await withDbOrMock(
       async (db) => {
-        const inserted = await db.insert(schema.masterParts).values({
-          name: parsedData.nomeDaPeca,
-          manufacturer: parsedData.fabricante,
-          manufacturerCode: parsedData.codigoPeca,
-          categoryId: "c-1", // Categoria Genérica (Motor) - Ajustar depois
-          description: `Extraído via IA do texto original: "${rawText}"`,
-          isApproved: false, // Needs admin approval!
-        }).returning({ id: schema.masterParts.id });
-        if (inserted.length > 0) {
-          partId = inserted[0].id;
+        // Check if masterPart with this code already exists
+        const existing = await db
+          .select({ id: schema.masterParts.id })
+          .from(schema.masterParts)
+          .where(eq(schema.masterParts.manufacturerCode, code))
+          .limit(1);
+
+        if (existing.length > 0) {
+          partId = existing[0].id;
+        } else {
+          // Ensure categoryId exists or use/create default category
+          const catRows = await db
+            .select({ id: schema.categories.id })
+            .from(schema.categories)
+            .limit(1);
+
+          let categoryId = catRows[0]?.id;
+          if (!categoryId) {
+            categoryId = "c-1";
+            await db.insert(schema.categories).values({
+              id: categoryId,
+              name: "Geral",
+              slug: "geral",
+            }).onConflictDoNothing();
+          }
+
+          const inserted = await db.insert(schema.masterParts).values({
+            id: partId,
+            name: parsedData.nomeDaPeca,
+            manufacturer: parsedData.fabricante || "Geral",
+            manufacturerCode: code,
+            categoryId,
+            description: `Extraído via IA do texto original: "${rawText}"`,
+            isApproved: false,
+          }).returning({ id: schema.masterParts.id });
+
+          if (inserted.length > 0) {
+            partId = inserted[0].id;
+          }
         }
       },
       () => { console.log("Mock db insert for AI part") }
@@ -100,7 +135,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ 
       success: true, 
       partId: partId,
-      extractedData: parsedData 
+      extractedData: {
+        ...parsedData,
+        codigoPeca: code
+      } 
     });
 
   } catch (error: any) {

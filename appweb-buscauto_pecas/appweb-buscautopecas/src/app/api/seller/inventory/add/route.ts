@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getDb } from "@/db";
 export const runtime = "edge";
-import { storeOffers, partCompatibility, stores } from "@/db/schema";
+import { storeOffers, partCompatibility, stores, masterParts, categories } from "@/db/schema";
 import { getSession } from "@/lib/auth-edge";
 import { and, eq } from "drizzle-orm";
 
@@ -45,6 +45,42 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Preço inválido." }, { status: 400 });
     }
 
+    // Ensure masterPart exists in DB before adding offer (prevents foreign key errors)
+    const existingPart = await db
+      .select({ id: masterParts.id })
+      .from(masterParts)
+      .where(eq(masterParts.id, partId))
+      .limit(1);
+
+    if (existingPart.length === 0) {
+      // Find or create default category
+      const catRows = await db
+        .select({ id: categories.id })
+        .from(categories)
+        .limit(1);
+
+      let categoryId = catRows[0]?.id;
+      if (!categoryId) {
+        categoryId = "c-1";
+        await db.insert(categories).values({
+          id: categoryId,
+          name: "Geral",
+          slug: "geral",
+        }).onConflictDoNothing();
+      }
+
+      // Create fallback masterPart for this partId
+      await db.insert(masterParts).values({
+        id: partId,
+        name: "Peça Genérica",
+        manufacturer: "Geral",
+        manufacturerCode: `PART-${partId.substring(0, 8).toUpperCase()}`,
+        categoryId,
+        description: "Peça cadastrada automaticamente",
+        isApproved: false,
+      }).onConflictDoNothing();
+    }
+
     // Verifica se já existe oferta dessa peça com a mesma condição na loja
     const existingOffer = await db
       .select()
@@ -85,8 +121,8 @@ export async function POST(req: Request) {
     }
 
     return NextResponse.json({ success: true, offerId });
-  } catch (error) {
+  } catch (error: any) {
     console.error("Add inventory error:", error);
-    return NextResponse.json({ error: "Erro interno no servidor." }, { status: 500 });
+    return NextResponse.json({ error: error.message || "Erro interno no servidor." }, { status: 500 });
   }
 }
