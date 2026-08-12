@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getDb } from "@/db";
+export const runtime = "edge";
 import { companies, stores } from "@/db/schema";
 import { verifyPassword } from "@/lib/auth";
 import { encryptJWT } from "@/lib/auth-edge";

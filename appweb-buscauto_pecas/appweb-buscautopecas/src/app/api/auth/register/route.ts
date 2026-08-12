@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
 import { getDb } from "@/db";
+export const runtime = "edge";
 import { companies, stores } from "@/db/schema";
 import { encryptPassword } from "@/lib/auth";
 import { encryptJWT } from "@/lib/auth-edge";
 import { cookies } from "next/headers";
-import crypto from "crypto";
 
 export async function POST(req: Request) {
   try {

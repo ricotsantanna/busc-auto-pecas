@@ -1,5 +1,6 @@
 import { getSession } from "@/lib/auth";
 import { redirect } from "next/navigation";
+export const runtime = "edge";
 import { withDbOrMock, schema } from "@/db";
 import { eq } from "drizzle-orm";
 import ProfileForm from "./ProfileForm";
