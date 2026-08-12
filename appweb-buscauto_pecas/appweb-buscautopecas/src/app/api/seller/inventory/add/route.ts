@@ -77,7 +77,6 @@ export async function POST(req: Request) {
         manufacturerCode: `PART-${partId.substring(0, 8).toUpperCase()}`,
         categoryId,
         description: "Peça cadastrada automaticamente",
-        isApproved: false,
       }).onConflictDoNothing();
     }
 

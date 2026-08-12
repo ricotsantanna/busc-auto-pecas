@@ -121,7 +121,6 @@ export async function POST(req: NextRequest) {
             manufacturerCode: code,
             categoryId,
             description: `Extraído via IA do texto original: "${rawText}"`,
-            isApproved: false,
           }).returning({ id: schema.masterParts.id });
 
           if (inserted.length > 0) {
