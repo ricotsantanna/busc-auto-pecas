@@ -12,10 +12,11 @@ type Part = {
 
 type Offer = {
   id: string;
-  price: string;
+  price: string | number;
   stockQuantity: number;
   condition: string;
   createdAt: string;
+  compatibilities?: string[];
   part: Part;
 };
 
@@ -54,6 +55,8 @@ export default function LojistaEstoque() {
   const [loadingBrands, setLoadingBrands] = useState(false);
   const [loadingModels, setLoadingModels] = useState(false);
   const [loadingVersions, setLoadingVersions] = useState(false);
+  const [existingCompat, setExistingCompat] = useState<string[]>([]);
+  const [loadingExistingCompat, setLoadingExistingCompat] = useState(false);
 
   // Debounce for search
   const debounceRef = useRef<NodeJS.Timeout>();
@@ -129,7 +132,25 @@ export default function LojistaEstoque() {
     try {
       const res = await fetch("/api/seller/inventory");
       const data = await res.json();
-      if (data.offers) setOffers(data.offers);
+      if (data.inventory) {
+        const mapped = data.inventory.map((item: any) => ({
+          id: item.offerId,
+          price: item.price,
+          stockQuantity: item.inStock ? 1 : 0,
+          condition: item.condition,
+          createdAt: item.createdAt,
+          compatibilities: item.compatibilities || [],
+          part: {
+            id: item.partId,
+            name: item.partName,
+            manufacturer: item.brand || "Geral",
+            partNumber: item.partNumber || "N/A",
+          },
+        }));
+        setOffers(mapped);
+      } else if (data.offers) {
+        setOffers(data.offers);
+      }
     } catch (e) {
       console.error(e);
     } finally {
@@ -170,6 +191,26 @@ export default function LojistaEstoque() {
     setIsDropdownOpen(false);
     setStep(1);
     setSelectedVersions([]);
+    setExistingCompat([]);
+    setLoadingExistingCompat(true);
+
+    fetch(`/api/parts/${part.id}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.compatibleVehicles) {
+          const list: string[] = [];
+          Object.entries(data.compatibleVehicles).forEach(([brand, models]: [string, any]) => {
+            Object.entries(models).forEach(([model, versions]: [string, any]) => {
+              (versions as any[]).forEach((v) => {
+                list.push(`${brand} ${model} (${v.year})`);
+              });
+            });
+          });
+          setExistingCompat(list);
+        }
+      })
+      .catch((e) => console.error(e))
+      .finally(() => setLoadingExistingCompat(false));
   };
 
   const handleNextStep = (e: React.FormEvent) => {
@@ -346,6 +387,7 @@ export default function LojistaEstoque() {
               <tr>
                 <th className="px-6 py-4">Peça (Catálogo Oficial)</th>
                 <th className="px-6 py-4">Fabricante / Cód.</th>
+                <th className="px-6 py-4">Catálogo Cruzado (Serve em)</th>
                 <th className="px-6 py-4">Preço (R$)</th>
                 <th className="px-6 py-4">Qtd.</th>
                 <th className="px-6 py-4">Condição</th>
@@ -355,7 +397,7 @@ export default function LojistaEstoque() {
             <tbody className="divide-y divide-slate-200">
               {loading ? (
                 <tr>
-                  <td colSpan={6} className="px-6 py-8 text-center text-slate-500">
+                  <td colSpan={7} className="px-6 py-8 text-center text-slate-500">
                     <Loader2 className="w-6 h-6 animate-spin mx-auto text-orange-500" />
                   </td>
                 </tr>
@@ -363,6 +405,19 @@ export default function LojistaEstoque() {
                 <tr key={offer.id} className="hover:bg-slate-50 transition-colors">
                   <td className="px-6 py-4 font-medium text-slate-900">{offer.part.name}</td>
                   <td className="px-6 py-4">{offer.part.manufacturer} <span className="text-xs text-slate-400 block">{offer.part.partNumber}</span></td>
+                  <td className="px-6 py-4 max-w-xs">
+                    {offer.compatibilities && offer.compatibilities.length > 0 ? (
+                      <div className="flex flex-wrap gap-1">
+                        {offer.compatibilities.map((comp, idx) => (
+                          <span key={idx} className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-blue-50 text-blue-700 border border-blue-200">
+                            {comp}
+                          </span>
+                        ))}
+                      </div>
+                    ) : (
+                      <span className="text-xs text-slate-400 italic">Sem compatibilidade vinculada</span>
+                    )}
+                  </td>
                   <td className="px-6 py-4 font-medium text-green-700">R$ {Number(offer.price).toFixed(2)}</td>
                   <td className="px-6 py-4">
                     <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-800">
@@ -378,7 +433,7 @@ export default function LojistaEstoque() {
               ))}
               {!loading && offers.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="px-6 py-8 text-center text-slate-500 flex flex-col items-center">
+                  <td colSpan={7} className="px-6 py-8 text-center text-slate-500 flex flex-col items-center">
                     <PackageX className="w-10 h-10 mb-2 opacity-20" />
                     Seu estoque está vazio. Busque uma peça acima para anunciar.
                   </td>
@@ -443,6 +498,30 @@ export default function LojistaEstoque() {
                       <option value="USADO">Usado</option>
                     </select>
                   </div>
+                </div>
+
+                {/* Bloco Catálogo Cruzado (Compatibilidade Existente) */}
+                <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <span className="text-sm font-semibold text-slate-900">Catálogo Cruzado (Veículos Compatíveis)</span>
+                  </div>
+                  {loadingExistingCompat ? (
+                    <div className="text-xs text-slate-500 flex items-center gap-2">
+                      <Loader2 className="w-3.5 h-3.5 animate-spin text-orange-500" /> Carregando compatibilidade do catálogo...
+                    </div>
+                  ) : existingCompat.length > 0 ? (
+                    <div className="flex flex-wrap gap-1.5 max-h-28 overflow-y-auto pt-1">
+                      {existingCompat.map((c, i) => (
+                        <span key={i} className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-50 text-blue-800 border border-blue-200">
+                          {c}
+                        </span>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-xs text-slate-500">
+                      Nenhum veículo vinculado ainda. Você poderá adicionar veículos na próxima etapa!
+                    </p>
+                  )}
                 </div>
 
                 <div className="pt-4 flex gap-3 justify-end border-t mt-6">
