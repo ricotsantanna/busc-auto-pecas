@@ -1,13 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { eq } from "drizzle-orm";
 import { withDbOrMock, schema } from "@/db";
-import bcrypt from "bcryptjs";
-import { SignJWT } from "jose";
+import { encryptPasswordEdge, encryptJWT } from "@/lib/auth-edge";
 import { cookies } from "next/headers";
-import { crypto } from "@/lib/crypto-polyfill";
 
 export const runtime = "edge";
-const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET || "super_secret_dev_key");
 
 export async function POST(req: NextRequest) {
   try {
@@ -19,7 +16,7 @@ export async function POST(req: NextRequest) {
 
     const companyId = crypto.randomUUID();
     const storeId = crypto.randomUUID();
-    const passwordHash = await bcrypt.hash(password, 10);
+    const passwordHash = await encryptPasswordEdge(password);
 
     const result = await withDbOrMock(
       async (db) => {
@@ -63,12 +60,8 @@ export async function POST(req: NextRequest) {
       }
     );
 
-    // Create JWT
-    const token = await new SignJWT({ companyId: result.companyId, email })
-      .setProtectedHeader({ alg: "HS256" })
-      .setIssuedAt()
-      .setExpirationTime("7d")
-      .sign(JWT_SECRET);
+    // Create JWT using centralized auth-edge
+    const token = await encryptJWT({ companyId: result.companyId, storeId, role: "SELLER" });
 
     // Set cookie
     const cookieStore = await cookies();

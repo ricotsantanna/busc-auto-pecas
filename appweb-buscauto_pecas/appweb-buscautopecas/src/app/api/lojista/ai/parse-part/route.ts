@@ -1,28 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { withDbOrMock, schema } from "@/db";
-import { crypto } from "@/lib/crypto-polyfill";
-import { jwtVerify } from "jose";
-import { cookies } from "next/headers";
-import { eq } from "drizzle-orm";
+import { getSession } from "@/lib/auth-edge";
 
 export const runtime = "edge";
-
-const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET || "super_secret_dev_key");
-
-// Middleware helper
-async function getAuthContext() {
-  const cookieStore = await cookies();
-  const token = cookieStore.get("auth_token")?.value;
-  if (!token) throw new Error("Não autenticado");
-
-  const { payload } = await jwtVerify(token, JWT_SECRET);
-  return { companyId: payload.companyId as string };
-}
 
 export async function POST(req: NextRequest) {
   try {
     // 1. Verify user
-    await getAuthContext();
+    const session = await getSession();
+    if (!session) {
+      return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
+    }
 
     const { rawText } = (await req.json()) as { rawText: string };
 

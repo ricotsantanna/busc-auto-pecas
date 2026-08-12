@@ -1,24 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import { eq, desc } from "drizzle-orm";
 import { withDbOrMock, schema } from "@/db";
-import { jwtVerify } from "jose";
-import { cookies } from "next/headers";
-import { crypto } from "@/lib/crypto-polyfill";
+import { getSession } from "@/lib/auth-edge";
 
 export const runtime = "edge";
-const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET || "super_secret_dev_key");
 
 // Middleware helper to get Company and Store ID
 async function getAuthContext() {
-  const cookieStore = await cookies();
-  const token = cookieStore.get("auth_token")?.value;
-  if (!token) throw new Error("Não autenticado");
+  const session = await getSession();
+  if (!session) throw new Error("Não autenticado");
 
-  const { payload } = await jwtVerify(token, JWT_SECRET);
-  const companyId = payload.companyId as string;
+  const companyId = session.companyId;
 
   // For phase 1, we just get the first store of the company
-  const storeId = await withDbOrMock(
+  const storeId = session.storeId || await withDbOrMock(
     async (db) => {
       const stores = await db.select().from(schema.stores).where(eq(schema.stores.companyId, companyId)).limit(1);
       return stores[0]?.id;

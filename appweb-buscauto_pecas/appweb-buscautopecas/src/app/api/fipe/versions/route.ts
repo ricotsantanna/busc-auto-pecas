@@ -13,10 +13,10 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "modelId é obrigatório" }, { status: 400 });
     }
 
-    let versionsData = [];
+    let versionsData: any[] = [];
     await withDbOrMock(
       async (db) => {
-        versionsData = await db.select({
+        const rows = await db.select({
           id: schema.carVersions.id,
           versionName: schema.carVersions.versionName,
           year: schema.carVersions.year,
@@ -24,10 +24,19 @@ export async function GET(req: NextRequest) {
         }).from(schema.carVersions)
           .where(eq(schema.carVersions.modelId, modelId))
           .orderBy(desc(schema.carVersions.year), asc(schema.carVersions.versionName));
+        
+        // Map to include 'name' field for frontend compatibility
+        versionsData = rows.map(r => ({
+          id: r.id,
+          name: `${r.versionName} ${r.year}${r.engine && r.engine !== 'N/A' ? ` (${r.engine})` : ''}`,
+          versionName: r.versionName,
+          year: r.year,
+          engine: r.engine,
+        }));
       },
       () => {
         versionsData = [
-          { id: "v-palio-1", versionName: "Palio Fire", year: 2014, engine: "N/A" }
+          { id: "v-palio-1", name: "Palio Fire 2014", versionName: "Palio Fire", year: 2014, engine: "N/A" }
         ];
       }
     );
