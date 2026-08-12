@@ -2,8 +2,7 @@ import { NextResponse } from "next/server";
 import { getDb } from "@/db";
 export const runtime = "edge";
 import { companies, stores } from "@/db/schema";
-import { encryptPassword } from "@/lib/auth";
-import { encryptJWT } from "@/lib/auth-edge";
+import { encryptPasswordEdge, encryptJWT } from "@/lib/auth-edge";
 import { cookies } from "next/headers";
 
 export async function POST(req: Request) {
@@ -20,7 +19,7 @@ export async function POST(req: Request) {
     // O D1 não aceita o mesmo CNPJ ou Email se estiver configurado unique, mas vamos fazer try/catch.
     
     // 2. Hash password
-    const passwordHash = await encryptPassword(password);
+    const passwordHash = await encryptPasswordEdge(password);
 
     const companyId = crypto.randomUUID();
     const storeId = crypto.randomUUID();

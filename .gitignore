@@ -9,3 +9,6 @@ fipe_data/
 .DS_Store
 *.zip
 *.pdf
+fipex-prices-latest-merged.csv
+tabela-fipe-historico-precos.csv
+*.db

@@ -2,7 +2,7 @@
 
 import { eq } from "drizzle-orm";
 import { withDbOrMock, schema } from "@/db";
-import { getSession } from "@/lib/auth";
+import { getSession } from "@/lib/auth-edge";
 import { revalidatePath } from "next/cache";
 
 export async function updateStoreProfile(formData: FormData) {

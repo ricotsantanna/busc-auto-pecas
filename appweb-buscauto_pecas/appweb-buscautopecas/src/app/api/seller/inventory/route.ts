@@ -3,7 +3,7 @@ import { getDb, schema } from "@/db";
 export const runtime = "edge";
 import { storeOffers, masterParts } from "@/db/schema";
 import { eq, desc, inArray } from "drizzle-orm";
-import { getSession } from "@/lib/auth";
+import { getSession } from "@/lib/auth-edge";
 
 export async function GET(req: Request) {
   try {

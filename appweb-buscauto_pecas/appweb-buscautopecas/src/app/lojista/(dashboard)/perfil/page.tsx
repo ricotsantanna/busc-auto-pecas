@@ -1,4 +1,4 @@
-import { getSession } from "@/lib/auth";
+import { getSession } from "@/lib/auth-edge";
 import { redirect } from "next/navigation";
 export const runtime = "edge";
 import { withDbOrMock, schema } from "@/db";

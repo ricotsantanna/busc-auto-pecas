@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getDb } from "@/db";
 export const runtime = "edge";
 import { storeOffers, partCompatibility } from "@/db/schema";
-import { getSession } from "@/lib/auth";
+import { getSession } from "@/lib/auth-edge";
 import { and, eq } from "drizzle-orm";
 
 export async function POST(req: Request) {

@@ -2,8 +2,7 @@ import { NextResponse } from "next/server";
 import { getDb } from "@/db";
 export const runtime = "edge";
 import { companies, stores } from "@/db/schema";
-import { verifyPassword } from "@/lib/auth";
-import { encryptJWT } from "@/lib/auth-edge";
+import { encryptJWT, encryptPasswordEdge, verifyPasswordEdge } from "@/lib/auth-edge";
 import { cookies } from "next/headers";
 import { eq } from "drizzle-orm";
 
@@ -27,7 +26,7 @@ export async function POST(req: Request) {
 
     if (!company) {
       // Se a conta ainda não existir no D1 (como contas de teste), cria automaticamente
-      const passwordHash = await encryptPassword(password);
+      const passwordHash = await encryptPasswordEdge(password);
       const companyId = crypto.randomUUID();
       const storeId = crypto.randomUUID();
 
@@ -60,10 +59,10 @@ export async function POST(req: Request) {
       } as any;
     } else {
       // 2. Verify Password
-      const isValid = await verifyPassword(password, company.passwordHash);
+      const isValid = await verifyPasswordEdge(password, company.passwordHash);
       if (!isValid) {
         // Se a senha inserida for diferente para testes, atualiza a senha no banco
-        const newHash = await encryptPassword(password);
+        const newHash = await encryptPasswordEdge(password);
         await db.update(companies).set({ passwordHash: newHash }).where(eq(companies.id, company.id));
       }
     }
