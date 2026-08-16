@@ -5,6 +5,17 @@ import { eq } from "drizzle-orm";
 
 export const runtime = "edge";
 
+function sanitizePartName(name: string): string {
+  if (!name) return "Peça Automotiva";
+  let cleaned = name;
+  // Remove 4-digit years (e.g. 1998, 2021)
+  cleaned = cleaned.replace(/\b(19\d{2}|20\d{2})\b/g, "");
+  // Clean multiple spaces
+  cleaned = cleaned.replace(/\s+/g, " ").trim();
+  if (cleaned.length === 0) return name;
+  return cleaned.charAt(0).toUpperCase() + cleaned.slice(1);
+}
+
 export async function POST(req: NextRequest) {
   try {
     // 1. Verify user
@@ -31,17 +42,16 @@ export async function POST(req: NextRequest) {
       Você é um assistente especialista em catálogos de autopeças.
       Sua tarefa é extrair as informações de uma peça automotiva a partir de um texto não estruturado escrito por um mecânico ou lojista.
       
-      Regras:
-      1. Extraia o nome da peça (nomeDaPeca). Ex: "Para-choque Dianteiro", "Pastilha de Freio".
-      2. Extraia o nome do fabricante (fabricante) se houver.
-      3. Extraia o código da peça (codigoPeca) se houver.
-      4. Você DEVE retornar APENAS um JSON válido. Não inclua nenhum texto antes ou depois do JSON. Não inclua markdown como \`\`\`json.
-      
-      Formato do JSON de saída:
+      REGRAS CRÍTICAS DE EXTRAÇÃO:
+      1. Extraia o NOME GENÉRICO da peça (nomeDaPeca). Ex: "Para-choque Dianteiro", "Pastilha de Freio Dianteira", "Farol Direito", "Filtro de Ar".
+      2. REMOVA RIGOROSAMENTE do nomeDaPeca qualquer menção a modelo de carro ou ano! Ex: Se o texto for "Farol direito audi A3 1998", nomeDaPeca DEVE ser "Farol Direito". Se for "Filtro de ar corsa 1998", nomeDaPeca DEVE ser "Filtro de Ar".
+      3. Extraia o nome do fabricante (fabricante) se houver (ex: Bosch, Cobreq, Fremax). Caso contrário, retorne "Desconhecido".
+      4. Extraia o código do fabricante (codigoPeca) se houver.
+      5. Você DEVE retornar APENAS um JSON válido no formato:
       {
         "nomeDaPeca": "string",
-        "fabricante": "string ou 'Desconhecido'",
-        "codigoPeca": "string ou 'N/A'"
+        "fabricante": "string",
+        "codigoPeca": "string"
       }`;
 
       const aiResponse = await fetch(
@@ -69,13 +79,18 @@ export async function POST(req: NextRequest) {
       const cleanJson = responseText.replace(/```json/g, "").replace(/```/g, "").trim();
       parsedData = JSON.parse(cleanJson);
     } else {
-      // MOCK FALLBACK: If API keys are not set, return a mock response for development
+      // MOCK FALLBACK: Return clean generic part name
       console.warn("CLOUDFLARE_ACCOUNT_ID ou CLOUDFLARE_API_TOKEN não encontrados. Usando Mock IA.");
       parsedData = {
-        nomeDaPeca: rawText.charAt(0).toUpperCase() + rawText.slice(1),
+        nomeDaPeca: sanitizePartName(rawText),
         fabricante: "Desconhecido",
         codigoPeca: "N/A"
       };
+    }
+
+    // Always sanitize nomeDaPeca to ensure no years stay in title
+    if (parsedData.nomeDaPeca) {
+      parsedData.nomeDaPeca = sanitizePartName(parsedData.nomeDaPeca);
     }
 
     // Ensure unique code for master_parts constraint

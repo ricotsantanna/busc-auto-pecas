@@ -8,6 +8,29 @@ def slugify(text):
     text = re.sub(r'[\s_-]+', '-', text)
     return text
 
+def escape_sql(text):
+    if not text:
+        return ''
+    return text.replace("'", "''")
+
+def safe_int(val):
+    if not val:
+        return None
+    try:
+        val_str = str(val).strip()
+        if val_str.isdigit():
+            return int(val_str)
+        match = re.search(r'\b(19\d{2}|20\d{2})\b', val_str)
+        if match:
+            return int(match.group(1))
+        match2 = re.search(r'\b(\d{2})\b', val_str)
+        if match2:
+            num = int(match2.group(1))
+            return 2000 + num if num < 50 else 1900 + num
+        return None
+    except Exception:
+        return None
+
 def main():
     conn = sqlite3.connect('data/local_catalog.db')
     cursor = conn.cursor()
@@ -15,28 +38,29 @@ def main():
     # Motor category ID from D1
     MOTOR_CAT_ID = '8b42c8da-d1a8-46f2-b3f5-31b322ca948c'
     
-    cursor.execute('SELECT id, part_code, name, manufacturer FROM extracted_parts')
+    cursor.execute('SELECT id, part_code, name, manufacturer, image_url FROM extracted_parts')
     parts = cursor.fetchall()
     
-    # Track part codes
     part_codes = {}
-    
     sql_statements = []
     
     # 1. Insert master_parts
     for p in parts:
         part_id = p[0]
-        code = p[1].strip()
-        name = p[2].strip()
-        manufacturer = p[3].strip()
+        code = escape_sql((p[1] or '').strip())
+        name = escape_sql((p[2] or '').strip())
+        manufacturer = escape_sql((p[3] or '').strip())
+        img_url = escape_sql((p[4] or '').strip())
+        
+        if not code:
+            continue
         
         part_uuid = str(uuid.uuid4())
         part_codes[part_id] = code
         
-        # INSERT OR IGNORE to not crash if the part already exists
         sql_statements.append(f"""
-        INSERT INTO master_parts (id, name, manufacturer, manufacturer_code, category_id)
-        SELECT '{part_uuid}', '{name}', '{manufacturer}', '{code}', '{MOTOR_CAT_ID}'
+        INSERT INTO master_parts (id, name, manufacturer, manufacturer_code, category_id, image_url)
+        SELECT '{part_uuid}', '{name}', '{manufacturer}', '{code}', '{MOTOR_CAT_ID}', '{img_url}'
         WHERE NOT EXISTS (SELECT 1 FROM master_parts WHERE manufacturer_code = '{code}');
         """)
 
@@ -46,17 +70,21 @@ def main():
     
     for c in compats:
         part_id = c[0]
-        brand = (c[1] or '').strip().upper()
-        model = (c[2] or '').strip().title()
-        version_str = (c[3] or '').strip()
+        brand_raw = (c[1] or '').strip().upper()
+        model_raw = (c[2] or '').strip().title()
+        version_raw = (c[3] or '').strip()
         start_year = c[4]
         end_year = c[5]
         
-        if not brand or not model:
+        if not brand_raw or not model_raw:
             continue
             
-        brand_slug = slugify(brand)
-        model_slug = slugify(f"{brand} {model}")
+        brand_slug = slugify(brand_raw)
+        model_slug = slugify(f"{brand_raw} {model_raw}")
+        
+        brand = escape_sql(brand_raw)
+        model = escape_sql(model_raw)
+        version_str = escape_sql(version_raw)
         
         brand_uuid = str(uuid.uuid4())
         model_uuid = str(uuid.uuid4())
@@ -79,9 +107,10 @@ def main():
         WHERE NOT EXISTS (SELECT 1 FROM car_models WHERE slug = '{model_slug}');
         """)
         
-        # We need to loop years if there is a range. If no year, default to 2000 for PoC just to satisfy DB.
-        s_year = int(start_year) if start_year else 2000
-        e_year = int(end_year) if end_year else s_year
+        parsed_start = safe_int(start_year)
+        parsed_end = safe_int(end_year)
+        s_year = parsed_start if parsed_start else 2000
+        e_year = parsed_end if parsed_end else s_year
         if e_year < s_year: e_year = s_year
         
         for y in range(s_year, e_year + 1):

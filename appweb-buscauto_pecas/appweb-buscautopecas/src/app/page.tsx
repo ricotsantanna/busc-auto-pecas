@@ -62,6 +62,7 @@ export default function HomePage() {
 
   const [selectedBrand, setSelectedBrand] = useState<string>("");
   const [selectedModel, setSelectedModel] = useState<string>("");
+  const [selectedYear, setSelectedYear] = useState<string>("");
   const [selectedVersion, setSelectedVersion] = useState<string>("");
   const [partQuery, setPartQuery] = useState<string>("");
   const [partSuggestions, setPartSuggestions] = useState<string[]>([]);
@@ -77,6 +78,7 @@ export default function HomePage() {
   useEffect(() => {
     setSelectedBrand("");
     setSelectedModel("");
+    setSelectedYear("");
     setSelectedVersion("");
     setBrands([]);
     setModels([]);
@@ -119,6 +121,7 @@ export default function HomePage() {
     setModels([]);
     setVersions([]);
     setSelectedModel("");
+    setSelectedYear("");
     setSelectedVersion("");
     if (!selectedBrand) return;
     setLoadingModels(true);
@@ -136,6 +139,7 @@ export default function HomePage() {
   // Versões quando modelo muda
   useEffect(() => {
     setVersions([]);
+    setSelectedYear("");
     setSelectedVersion("");
     if (!selectedModel) return;
     setLoadingVersions(true);
@@ -317,7 +321,7 @@ export default function HomePage() {
               </button>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               {/* MONTADORA */}
               <div>
                 <label className="field-label" htmlFor="brand">
@@ -374,10 +378,45 @@ export default function HomePage() {
                 </div>
               </div>
 
-              {/* VERSÃO / ANO */}
+              {/* ANO DO MODELO */}
+              <div>
+                <label className="field-label" htmlFor="year">
+                  3. Ano do Modelo
+                </label>
+                <div className="relative">
+                  <select
+                    id="year"
+                    className="field appearance-none pr-10"
+                    value={selectedYear}
+                    onChange={(e) => {
+                      setSelectedYear(e.target.value);
+                      setSelectedVersion("");
+                    }}
+                    disabled={!selectedModel || loadingVersions || versions.length === 0}
+                  >
+                    <option value="">
+                      {!selectedModel
+                        ? "Escolha o modelo primeiro"
+                        : loadingVersions
+                        ? "Carregando..."
+                        : "Todos os Anos"}
+                    </option>
+                    {Array.from(new Set(versions.map((v) => v.year)))
+                      .sort((a, b) => b - a)
+                      .map((yr) => (
+                        <option key={yr} value={String(yr)}>
+                          Ano {yr}
+                        </option>
+                      ))}
+                  </select>
+                  <ChevronRight className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 rotate-90" />
+                </div>
+              </div>
+
+              {/* VERSÃO */}
               <div>
                 <label className="field-label" htmlFor="version">
-                  3. Versão / Ano
+                  4. Versão / Motorização
                 </label>
                 <div className="relative">
                   <select
@@ -392,9 +431,12 @@ export default function HomePage() {
                         ? "Escolha o modelo primeiro"
                         : loadingVersions
                         ? "Carregando..."
-                        : "Selecione a versão"}
+                        : "Todas as versões"}
                     </option>
-                    {versions.map((v) => (
+                    {(selectedYear
+                      ? versions.filter((v) => String(v.year) === selectedYear)
+                      : versions
+                    ).map((v) => (
                       <option key={v.id} value={v.id}>
                         {v.year} — {v.versionName} {v.engine}
                       </option>
@@ -409,7 +451,7 @@ export default function HomePage() {
             <div className="mt-6 grid grid-cols-1 md:grid-cols-[1fr_auto] gap-4">
               <div>
                 <label className="field-label" htmlFor="part">
-                  4. Qual peça você precisa?
+                  5. Qual peça você precisa?
                 </label>
                 <div className="relative">
                   <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
