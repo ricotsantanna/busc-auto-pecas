@@ -21,6 +21,11 @@ import {
   Lightbulb,
   Package,
   ArrowRight,
+  Menu,
+  X,
+  Phone,
+  FileText,
+  Lock,
 } from "lucide-react";
 
 type Brand = { id: string; name: string; slug: string };
@@ -79,6 +84,7 @@ export default function HomePage() {
   const [partSuggestions, setPartSuggestions] = useState<string[]>([]);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [searchingParts, setSearchingParts] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const debounceRef = useRef<NodeJS.Timeout>();
 
   const [loadingBrands, setLoadingBrands] = useState(true);
@@ -234,6 +240,7 @@ export default function HomePage() {
               </div>
             </div>
           </div>
+          {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center gap-6 text-sm font-medium text-white/90">
             <a href="#como-funciona" className="hover:text-white transition">Como funciona</a>
             <a href="/oficinas" className="hover:text-white transition flex items-center gap-1.5 font-bold text-orange-300 hover:text-orange-200">
@@ -246,7 +253,74 @@ export default function HomePage() {
               <Store className="h-4 w-4" /> Painel da loja
             </a>
           </nav>
+
+          {/* Mobile Hamburger Button */}
+          <button
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            aria-label="Abrir menu de navegação"
+            className="md:hidden p-2 rounded-lg text-white hover:bg-white/10 transition"
+          >
+            {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+          </button>
         </div>
+
+        {/* Mobile Drawer Menu */}
+        {mobileMenuOpen && (
+          <div className="md:hidden bg-slate-900 border-t border-white/10 px-4 py-4 space-y-3 animate-in slide-in-from-top duration-200 shadow-xl">
+            <a
+              href="/"
+              onClick={() => setMobileMenuOpen(false)}
+              className="flex items-center gap-2 text-sm font-medium text-white hover:text-orange-400 p-2 rounded-lg hover:bg-white/5"
+            >
+              <Search className="h-4 w-4 text-brand-secondary" /> Buscar Peças
+            </a>
+            <a
+              href="/oficinas"
+              onClick={() => setMobileMenuOpen(false)}
+              className="flex items-center gap-2 text-sm font-bold text-orange-300 hover:text-orange-200 p-2 rounded-lg hover:bg-white/5"
+            >
+              <Wrench className="h-4 w-4" /> Oficinas Mecânicas
+            </a>
+            <a
+              href="#como-funciona"
+              onClick={() => setMobileMenuOpen(false)}
+              className="flex items-center gap-2 text-sm font-medium text-white/90 hover:text-white p-2 rounded-lg hover:bg-white/5"
+            >
+              <ChevronRight className="h-4 w-4 text-slate-400" /> Como funciona
+            </a>
+            <a
+              href="/contato"
+              onClick={() => setMobileMenuOpen(false)}
+              className="flex items-center gap-2 text-sm font-medium text-white/90 hover:text-white p-2 rounded-lg hover:bg-white/5"
+            >
+              <Phone className="h-4 w-4 text-slate-400" /> Contato & Suporte
+            </a>
+            <a
+              href="/termos"
+              onClick={() => setMobileMenuOpen(false)}
+              className="flex items-center gap-2 text-sm font-medium text-white/90 hover:text-white p-2 rounded-lg hover:bg-white/5"
+            >
+              <FileText className="h-4 w-4 text-slate-400" /> Termos de Uso
+            </a>
+            <a
+              href="/privacidade"
+              onClick={() => setMobileMenuOpen(false)}
+              className="flex items-center gap-2 text-sm font-medium text-white/90 hover:text-white p-2 rounded-lg hover:bg-white/5"
+            >
+              <Lock className="h-4 w-4 text-slate-400" /> Privacidade LGPD
+            </a>
+
+            <div className="pt-2 border-t border-white/10">
+              <a
+                href="/login"
+                onClick={() => setMobileMenuOpen(false)}
+                className="w-full flex items-center justify-center gap-2 bg-brand-secondary hover:bg-orange-600 text-white font-bold text-sm py-2.5 rounded-xl transition shadow-sm"
+              >
+                <Store className="h-4 w-4" /> Painel da Loja (Lojista)
+              </a>
+            </div>
+          </div>
+        )}
       </header>
 
       {/* ==================== HERO + FORM ==================== */}

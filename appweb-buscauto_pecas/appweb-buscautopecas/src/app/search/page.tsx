@@ -19,6 +19,11 @@ import {
   BadgeCheck,
   History,
   Sparkles,
+  Menu,
+  X,
+  Phone,
+  FileText,
+  Lock,
 } from "lucide-react";
 import {
   Drawer,
@@ -348,10 +353,12 @@ function SearchInner() {
     };
   }, [filteredOffers]);
 
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
   return (
     <div className="min-h-screen bg-brand-bg">
       {/* header */}
-      <header className="bg-brand-primary text-white shadow-sm">
+      <header className="bg-brand-primary text-white shadow-sm sticky top-0 z-40">
         <div className="container flex items-center justify-between h-16">
           <Link href="/" className="flex items-center gap-3">
             <img
@@ -368,13 +375,83 @@ function SearchInner() {
               </div>
             </div>
           </Link>
-          <Link
-            href="/"
-            className="inline-flex items-center gap-1.5 text-sm bg-white/10 hover:bg-white/20 ring-1 ring-white/20 rounded-lg px-3 py-1.5 transition"
+
+          {/* Desktop Navigation */}
+          <div className="hidden md:flex items-center gap-4">
+            <Link
+              href="/oficinas"
+              className="inline-flex items-center gap-1.5 text-sm font-bold text-orange-300 hover:text-orange-200 transition"
+            >
+              <Wrench className="h-4 w-4" /> Oficinas Mecânicas
+            </Link>
+            <Link
+              href="/"
+              className="inline-flex items-center gap-1.5 text-sm bg-white/10 hover:bg-white/20 ring-1 ring-white/20 rounded-lg px-3 py-1.5 transition"
+            >
+              <ArrowLeft className="h-4 w-4" /> Nova busca
+            </Link>
+          </div>
+
+          {/* Mobile Hamburger Button */}
+          <button
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            aria-label="Abrir menu de navegação"
+            className="md:hidden p-2 rounded-lg text-white hover:bg-white/10 transition"
           >
-            <ArrowLeft className="h-4 w-4" /> Nova busca
-          </Link>
+            {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+          </button>
         </div>
+
+        {/* Mobile Drawer Menu */}
+        {mobileMenuOpen && (
+          <div className="md:hidden bg-slate-900 border-t border-white/10 px-4 py-4 space-y-3 animate-in slide-in-from-top duration-200 shadow-xl">
+            <Link
+              href="/"
+              onClick={() => setMobileMenuOpen(false)}
+              className="flex items-center gap-2 text-sm font-medium text-white hover:text-orange-400 p-2 rounded-lg hover:bg-white/5"
+            >
+              <ArrowLeft className="h-4 w-4 text-brand-secondary" /> Nova Busca de Peças
+            </Link>
+            <Link
+              href="/oficinas"
+              onClick={() => setMobileMenuOpen(false)}
+              className="flex items-center gap-2 text-sm font-bold text-orange-300 hover:text-orange-200 p-2 rounded-lg hover:bg-white/5"
+            >
+              <Wrench className="h-4 w-4" /> Oficinas Mecânicas
+            </Link>
+            <Link
+              href="/contato"
+              onClick={() => setMobileMenuOpen(false)}
+              className="flex items-center gap-2 text-sm font-medium text-white/90 hover:text-white p-2 rounded-lg hover:bg-white/5"
+            >
+              <Phone className="h-4 w-4 text-slate-400" /> Contato & Suporte
+            </Link>
+            <Link
+              href="/termos"
+              onClick={() => setMobileMenuOpen(false)}
+              className="flex items-center gap-2 text-sm font-medium text-white/90 hover:text-white p-2 rounded-lg hover:bg-white/5"
+            >
+              <FileText className="h-4 w-4 text-slate-400" /> Termos de Uso
+            </Link>
+            <Link
+              href="/privacidade"
+              onClick={() => setMobileMenuOpen(false)}
+              className="flex items-center gap-2 text-sm font-medium text-white/90 hover:text-white p-2 rounded-lg hover:bg-white/5"
+            >
+              <Lock className="h-4 w-4 text-slate-400" /> Privacidade LGPD
+            </Link>
+
+            <div className="pt-2 border-t border-white/10">
+              <Link
+                href="/login"
+                onClick={() => setMobileMenuOpen(false)}
+                className="w-full flex items-center justify-center gap-2 bg-brand-secondary hover:bg-orange-600 text-white font-bold text-sm py-2.5 rounded-xl transition shadow-sm"
+              >
+                <StoreIcon className="h-4 w-4" /> Painel da Loja (Lojista)
+              </Link>
+            </div>
+          </div>
+        )}
       </header>
 
       {/* Sub-header: contexto da busca */}
