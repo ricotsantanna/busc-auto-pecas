@@ -55,10 +55,21 @@ export default function HomePage() {
 
   const [segment, setSegment] = useState<"CARRO" | "ELETRICO" | "MOTO" | "AUTOPROPELIDO">("CARRO");
 
+  const INITIAL_CATEGORIES: Category[] = [
+    { id: "cat-freios", name: "Freios", slug: "freios", icon: "Disc", partCount: 4820 },
+    { id: "cat-suspensao", name: "Suspensão e Direção", slug: "suspensao-e-direcao", icon: "Waves", partCount: 3950 },
+    { id: "cat-motor", name: "Motor e Componentes", slug: "motor", icon: "Cog", partCount: 5210 },
+    { id: "cat-ignicao", name: "Ignição e Injeção", slug: "ignicao-e-injecao", icon: "Zap", partCount: 3410 },
+    { id: "cat-filtros", name: "Filtros e Óleos", slug: "filtros-e-oleos", icon: "Filter", partCount: 3180 },
+    { id: "cat-transmissao", name: "Transmissão e Embreagem", slug: "transmissao-e-embreagem", icon: "Sliders", partCount: 2940 },
+    { id: "cat-iluminacao", name: "Iluminação e Faróis", slug: "iluminacao-e-farois", icon: "Lightbulb", partCount: 2120 },
+    { id: "cat-acessorios", name: "Autopropelidos e Scooters", slug: "autopropelidos-e-scooters", icon: "Zap", partCount: 1828 },
+  ];
+
   const [brands, setBrands] = useState<Brand[]>([]);
   const [models, setModels] = useState<CarModel[]>([]);
   const [versions, setVersions] = useState<CarVersion[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
+  const [categories, setCategories] = useState<Category[]>(INITIAL_CATEGORIES);
 
   const [selectedBrand, setSelectedBrand] = useState<string>("");
   const [selectedModel, setSelectedModel] = useState<string>("");
@@ -594,7 +605,7 @@ export default function HomePage() {
                   {c.name}
                 </div>
                 <div className="text-[11px] text-brand-muted mt-0.5">
-                  {c.partCount} peças
+                  {c.partCount.toLocaleString("pt-BR")} peças
                 </div>
               </a>
             );
