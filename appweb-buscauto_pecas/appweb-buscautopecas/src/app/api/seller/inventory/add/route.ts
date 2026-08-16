@@ -27,7 +27,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Loja não encontrada." }, { status: 404 });
     }
 
-    const { partId, price, condition, versionIds } = await req.json();
+    const { partId, price, condition, versionIds, manufacturer } = await req.json();
 
     if (!partId || price === undefined || !condition) {
       return NextResponse.json({ error: "Dados incompletos." }, { status: 400 });
@@ -43,6 +43,13 @@ export async function POST(req: Request) {
 
     if (price < 0) {
       return NextResponse.json({ error: "Preço inválido." }, { status: 400 });
+    }
+
+    // Update manufacturer on masterParts if provided by lojista
+    if (manufacturer && typeof manufacturer === "string" && manufacturer.trim() && manufacturer.trim() !== "Desconhecido") {
+      await db.update(masterParts)
+        .set({ manufacturer: manufacturer.trim() })
+        .where(eq(masterParts.id, partId));
     }
 
     // Ensure masterPart exists in DB before adding offer (prevents foreign key errors)

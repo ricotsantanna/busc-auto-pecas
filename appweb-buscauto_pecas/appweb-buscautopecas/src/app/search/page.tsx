@@ -171,6 +171,7 @@ function SearchInner() {
   const params = useSearchParams();
   const brand = params.get("brand") ?? "";
   const model = params.get("model") ?? "";
+  const year = params.get("year") ?? "";
   const version = params.get("version") ?? "";
   const q = params.get("q") ?? "";
 
@@ -188,6 +189,7 @@ function SearchInner() {
     const url = `/api/search?${new URLSearchParams({
       brand,
       model,
+      year,
       version,
       q,
     }).toString()}`;
@@ -225,7 +227,7 @@ function SearchInner() {
       window.removeEventListener("buscautopecas:offers-changed", onChange);
       window.removeEventListener("storage", onChange);
     };
-  }, [brand, model, version, q]);
+  }, [brand, model, year, version, q]);
 
   const filteredOffers = useMemo(() => {
     if (!data) return [];
@@ -287,22 +289,32 @@ function SearchInner() {
               {q ? <>&ldquo;{q}&rdquo;</> : "Todas as peças"}
             </div>
             {data?.vehicle && (
-              <div className="mt-1 text-sm text-brand-muted">
-                <span className="font-medium text-brand-ink">
-                  {data.vehicle.brand}
-                </span>
+              <div className="mt-2 text-xs text-brand-muted flex items-center flex-wrap gap-1.5">
+                {data.vehicle.brand && (
+                  <span className="font-semibold text-slate-800 bg-slate-100 px-2 py-1 rounded border border-slate-200">
+                    {data.vehicle.brand}
+                  </span>
+                )}
                 {data.vehicle.model && (
                   <>
-                    {" › "}
-                    <span className="font-medium text-brand-ink">
+                    <span className="text-slate-400">›</span>
+                    <span className="font-semibold text-slate-800 bg-slate-100 px-2 py-1 rounded border border-slate-200">
                       {data.vehicle.model}
+                    </span>
+                  </>
+                )}
+                {data.vehicle.year && (
+                  <>
+                    <span className="text-slate-400">›</span>
+                    <span className="font-bold text-orange-700 bg-orange-50 px-2.5 py-1 rounded border border-orange-200">
+                      Ano {data.vehicle.year}
                     </span>
                   </>
                 )}
                 {data.vehicle.version && (
                   <>
-                    {" › "}
-                    <span className="font-medium text-brand-ink">
+                    <span className="text-slate-400">›</span>
+                    <span className="font-medium text-slate-700 bg-slate-100 px-2 py-1 rounded border border-slate-200">
                       {data.vehicle.version}
                     </span>
                   </>

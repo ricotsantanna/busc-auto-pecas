@@ -187,19 +187,19 @@ export default function HomePage() {
   };
 
   const canSearch = useMemo(
-    () => !!selectedVersion && partQuery.trim().length >= 2,
-    [selectedVersion, partQuery]
+    () => partQuery.trim().length >= 2 || !!selectedModel || !!selectedBrand,
+    [selectedBrand, selectedModel, partQuery]
   );
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!canSearch) return;
-    const params = new URLSearchParams({
-      brand: selectedBrand,
-      model: selectedModel,
-      version: selectedVersion,
-      q: partQuery.trim(),
-    });
+    const params = new URLSearchParams();
+    if (selectedBrand) params.set("brand", selectedBrand);
+    if (selectedModel) params.set("model", selectedModel);
+    if (selectedYear) params.set("year", selectedYear);
+    if (selectedVersion) params.set("version", selectedVersion);
+    if (partQuery.trim()) params.set("q", partQuery.trim());
     router.push(`/search?${params.toString()}`);
   }
 

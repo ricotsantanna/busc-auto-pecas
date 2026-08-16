@@ -7,9 +7,10 @@ export const runtime = "edge";
 export async function GET(req: NextRequest) {
   const sp = req.nextUrl.searchParams;
   const q = sp.get("q")?.trim() ?? "";
-  const brand = sp.get("brand") ?? undefined;
-  const model = sp.get("model") ?? undefined;
-  const version = sp.get("version") ?? undefined;
+  const brandId = sp.get("brand") ?? undefined;
+  const modelId = sp.get("model") ?? undefined;
+  const yearStr = sp.get("year") ?? undefined;
+  const versionId = sp.get("version") ?? undefined;
 
   const db = await getDb();
 
@@ -52,20 +53,63 @@ export async function GET(req: NextRequest) {
       .innerJoin(schema.stores, eq(schema.storeOffers.storeId, schema.stores.id))
       .leftJoin(schema.categories, eq(schema.masterParts.categoryId, schema.categories.id));
 
-    // STRICT MAPPING: Se o usuário selecionou uma versão, cruzamos obrigatoriamente
-    if (version) {
+    // Vehicle Filtering
+    if (versionId) {
       baseQuery = baseQuery.innerJoin(
-        schema.partCompatibility, 
+        schema.partCompatibility,
         and(
           eq(schema.masterParts.id, schema.partCompatibility.partId),
-          eq(schema.partCompatibility.versionId, version)
+          eq(schema.partCompatibility.versionId, versionId)
         )
       ) as any;
+    } else if (yearStr && modelId) {
+      const yearNum = parseInt(yearStr, 10);
+      baseQuery = baseQuery
+        .innerJoin(schema.partCompatibility, eq(schema.masterParts.id, schema.partCompatibility.partId))
+        .innerJoin(schema.carVersions, eq(schema.partCompatibility.versionId, schema.carVersions.id))
+        .where(
+          and(
+            eq(schema.carVersions.modelId, modelId),
+            eq(schema.carVersions.year, yearNum)
+          )
+        ) as any;
     }
 
     const results = await baseQuery
       .where(whereClause)
       .orderBy(asc(schema.storeOffers.price));
+
+    // Resolve readable vehicle info
+    let vehicleInfo: { brand?: string; model?: string; year?: string; version?: string } | null = null;
+    
+    if (brandId || modelId || yearStr || versionId) {
+      let bName = brandId;
+      let mName = modelId;
+      let vName = versionId;
+
+      if (brandId) {
+        const b = await db.select({ name: schema.brands.name }).from(schema.brands).where(eq(schema.brands.id, brandId)).limit(1);
+        if (b[0]) bName = b[0].name;
+      }
+      if (modelId) {
+        const m = await db.select({ name: schema.carModels.name }).from(schema.carModels).where(eq(schema.carModels.id, modelId)).limit(1);
+        if (m[0]) mName = m[0].name;
+      }
+      if (versionId) {
+        const v = await db.select({ name: schema.carVersions.versionName, year: schema.carVersions.year }).from(schema.carVersions).where(eq(schema.carVersions.id, versionId)).limit(1);
+        if (v[0]) {
+          vName = v[0].name;
+          if (!yearStr) yearStr = String(v[0].year);
+        }
+      }
+
+      vehicleInfo = {
+        brand: bName || undefined,
+        model: mName || undefined,
+        year: yearStr || undefined,
+        version: vName || undefined,
+      };
+    }
 
     // Calculate metadata
     let minPrice = null;
@@ -85,7 +129,7 @@ export async function GET(req: NextRequest) {
     const avgPrice = results.length > 0 ? totalPrice / results.length : null;
 
     const response = {
-      vehicle: version ? { brand: brand || "", model: model || "", version: version } : null,
+      vehicle: vehicleInfo,
       query: q,
       offers: results,
       meta: {

@@ -53,6 +53,7 @@ export default function LojistaEstoque() {
   const [selectedModel, setSelectedModel] = useState("");
   const [selectedYear, setSelectedYear] = useState("");
   const [selectedVersions, setSelectedVersions] = useState<string[]>([]);
+  const [manufacturerName, setManufacturerName] = useState("");
   const [loadingBrands, setLoadingBrands] = useState(false);
   const [loadingModels, setLoadingModels] = useState(false);
   const [loadingVersions, setLoadingVersions] = useState(false);
@@ -189,6 +190,7 @@ export default function LojistaEstoque() {
 
   const handleSelectPart = (part: Part) => {
     setSelectedPart(part);
+    setManufacturerName(part.manufacturer && part.manufacturer !== "Desconhecido" ? part.manufacturer : "");
     setQuery("");
     setIsDropdownOpen(false);
     setStep(1);
@@ -218,6 +220,9 @@ export default function LojistaEstoque() {
   const handleNextStep = (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedPart) return;
+    if (selectedPart && manufacturerName) {
+      selectedPart.manufacturer = manufacturerName;
+    }
     setStep(2);
   };
 
@@ -236,6 +241,7 @@ export default function LojistaEstoque() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           partId: selectedPart.id,
+          manufacturer: manufacturerName,
           price: parseFloat(price.replace(",", ".")),
           stockQuantity: parseInt(quantity, 10),
           condition,
@@ -246,6 +252,7 @@ export default function LojistaEstoque() {
       if (res.ok) {
         setSelectedPart(null);
         setPrice("");
+        setManufacturerName("");
         setQuantity("1");
         setStep(1);
         setSelectedVersions([]);
@@ -466,6 +473,17 @@ export default function LojistaEstoque() {
             {step === 1 ? (
               <form onSubmit={handleNextStep} className="p-6 space-y-4">
                 <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Fabricante / Marca da Peça</label>
+                  <input 
+                    type="text" 
+                    value={manufacturerName}
+                    onChange={e => setManufacturerName(e.target.value)}
+                    placeholder="ex: Bosch, Cobreq, Monroe, Nakata, Fremax, Original..."
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 font-medium" 
+                  />
+                  <p className="text-xs text-slate-400 mt-1">Insira a fabricante oficial da peça se souber.</p>
+                </div>
+                <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">Preço de Venda (R$)</label>
                   <input 
                     type="number" 
@@ -548,7 +566,7 @@ export default function LojistaEstoque() {
             ) : (
               <form onSubmit={handleFinalizeOffer} className="p-6 space-y-4">
                 <p className="text-sm text-slate-600 mb-4">
-                  Selecione todos os veículos (montadora, modelo e ano) que são compatíveis com esta peça.
+                  Selecione todos os veículos (montadora, modelo e anos) que são compatíveis com esta peça.
                 </p>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                   <div>
@@ -593,7 +611,7 @@ export default function LojistaEstoque() {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Ano do Modelo</label>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Filtro de Ano</label>
                     <select 
                       value={selectedYear} 
                       onChange={(e) => setSelectedYear(e.target.value)}
@@ -607,6 +625,62 @@ export default function LojistaEstoque() {
                     </select>
                   </div>
                 </div>
+
+                {/* Bloco de Seleção Rápida por Múltiplos Anos */}
+                {selectedModel && versions.length > 0 && (
+                  <div className="bg-slate-50 p-3 rounded-lg border border-slate-200 mt-3">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+                        Clique no Ano para Marcar/Desmarcar todas as versões de uma vez:
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setSelectedYear("")}
+                        className={`text-xs px-2 py-0.5 rounded font-medium ${!selectedYear ? 'bg-orange-600 text-white' : 'bg-white border text-slate-700'}`}
+                      >
+                        Ver Todos os Anos
+                      </button>
+                    </div>
+                    <div className="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto p-1">
+                      {Array.from(new Set(versions.map(v => v.year))).sort((a: any, b: any) => b - a).map(yr => {
+                        const yearVersions = versions.filter(v => v.year === yr);
+                        const allYearSelected = yearVersions.length > 0 && yearVersions.every(v => selectedVersions.includes(v.id));
+                        const someYearSelected = yearVersions.some(v => selectedVersions.includes(v.id));
+
+                        return (
+                          <button
+                            key={yr}
+                            type="button"
+                            onClick={() => {
+                              const yearIds = yearVersions.map(v => v.id);
+                              if (allYearSelected) {
+                                setSelectedVersions(prev => prev.filter(id => !yearIds.includes(id)));
+                              } else {
+                                setSelectedVersions(prev => Array.from(new Set([...prev, ...yearIds])));
+                              }
+                              setSelectedYear(String(yr));
+                            }}
+                            className={`px-3 py-1 text-xs rounded-full border font-semibold transition-all flex items-center gap-1.5 shadow-sm ${
+                              allYearSelected 
+                                ? 'bg-orange-600 text-white border-orange-700' 
+                                : someYearSelected
+                                ? 'bg-orange-100 text-orange-800 border-orange-300'
+                                : selectedYear === String(yr)
+                                ? 'bg-blue-600 text-white border-blue-700'
+                                : 'bg-white text-slate-700 border-slate-300 hover:border-orange-400 hover:bg-orange-50'
+                            }`}
+                          >
+                            <span>Ano {yr}</span>
+                            <span className={`text-[10px] px-1.5 py-0.2 rounded-full ${allYearSelected ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600'}`}>
+                              {yearVersions.length}
+                            </span>
+                            {allYearSelected && <span>✓</span>}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
 
                 {selectedModel && (() => {
                   const filteredVersions = selectedYear 
