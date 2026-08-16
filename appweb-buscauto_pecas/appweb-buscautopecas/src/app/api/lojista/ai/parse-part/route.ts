@@ -1,165 +1,188 @@
 import { NextRequest, NextResponse } from "next/server";
-import { withDbOrMock, schema } from "@/db";
+import { getDb, schema } from "@/db";
 import { getSession } from "@/lib/auth-edge";
-import { eq } from "drizzle-orm";
+import { eq, like, or, and } from "drizzle-orm";
 
 export const runtime = "edge";
 
-function sanitizePartName(name: string): string {
-  if (!name) return "Peça Automotiva";
-  let cleaned = name;
-  // Remove 4-digit years (e.g. 1998, 2021)
-  cleaned = cleaned.replace(/\b(19\d{2}|20\d{2})\b/g, "");
-  // Clean multiple spaces
-  cleaned = cleaned.replace(/\s+/g, " ").trim();
-  if (cleaned.length === 0) return name;
-  return cleaned.charAt(0).toUpperCase() + cleaned.slice(1);
-}
+// Dict of common part names and typos for instant clean standardization
+const PART_DICTIONARY: { pattern: RegExp; cleanName: string }[] = [
+  { pattern: /para\s*brisa|parabrisas?/i, cleanName: "Para-brisa Dianteiro" },
+  { pattern: /farol\s*(dianteiro)?\s*direit[oa]/i, cleanName: "Farol Dianteiro Direito" },
+  { pattern: /farol\s*(dianteiro)?\s*esquerd[oa]/i, cleanName: "Farol Dianteiro Esquerdo" },
+  { pattern: /farol/i, cleanName: "Farol Dianteiro" },
+  { pattern: /filtro\s*(de)?\s*ar/i, cleanName: "Filtro de Ar" },
+  { pattern: /pastilha\s*(de)?\s*freio/i, cleanName: "Pastilha de Freio Dianteira" },
+  { pattern: /disco\s*(de)?\s*freio/i, cleanName: "Disco de Freio Ventilado" },
+  { pattern: /lanterna\s*(traseira)?\s*direit[oa]/i, cleanName: "Lanterna Traseira Direita" },
+  { pattern: /lanterna\s*(traseira)?\s*esquerd[oa]/i, cleanName: "Lanterna Traseira Esquerda" },
+  { pattern: /lanterna/i, cleanName: "Lanterna Traseira" },
+  { pattern: /porta\s*(dianteira)?\s*direit[oa]/i, cleanName: "Porta Dianteira Direita" },
+  { pattern: /porta\s*(dianteira)?\s*esquerd[oa]/i, cleanName: "Porta Dianteira Esquerda" },
+  { pattern: /porta/i, cleanName: "Porta Dianteira" },
+  { pattern: /amortecedor/i, cleanName: "Amortecedor Dianteiro" },
+];
+
+const KNOWN_BRANDS: { search: string[]; name: string }[] = [
+  { search: ["audi", "aaudi"], name: "Audi" },
+  { search: ["fiat"], name: "Fiat" },
+  { search: ["chevrolet", "gm", "chevr"], name: "Chevrolet" },
+  { search: ["volkswagen", "vw", "volks"], name: "Volkswagen" },
+  { search: ["ford"], name: "Ford" },
+  { search: ["honda"], name: "Honda" },
+  { search: ["toyota"], name: "Toyota" },
+  { search: ["hyundai"], name: "Hyundai" },
+  { search: ["renault"], name: "Renault" },
+  { search: ["jeep"], name: "Jeep" },
+  { search: ["nissan"], name: "Nissan" },
+];
+
+const KNOWN_MODELS: { search: string[]; name: string }[] = [
+  { search: ["a3"], name: "A3" },
+  { search: ["siena"], name: "Siena" },
+  { search: ["corsa"], name: "Corsa" },
+  { search: ["argo"], name: "Argo" },
+  { search: ["uno"], name: "Uno" },
+  { search: ["palio"], name: "Palio" },
+  { search: ["gol"], name: "Gol" },
+  { search: ["onix"], name: "Onix" },
+  { search: ["ka"], name: "Ka" },
+  { search: ["hb20"], name: "HB20" },
+  { search: ["civic"], name: "Civic" },
+  { search: ["corolla"], name: "Corolla" },
+  { search: ["renegade"], name: "Renegade" },
+  { search: ["compass"], name: "Compass" },
+];
 
 export async function POST(req: NextRequest) {
   try {
-    // 1. Verify user
     const session = await getSession();
     if (!session) {
       return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
     }
 
     const { rawText } = (await req.json()) as { rawText: string };
-
     if (!rawText || rawText.trim() === "") {
       return NextResponse.json({ error: "Texto vazio" }, { status: 400 });
     }
 
-    // 2. Setup Cloudflare AI (Llama 3) via REST API
-    const accountId = process.env.CLOUDFLARE_ACCOUNT_ID;
-    const apiToken = process.env.CLOUDFLARE_API_TOKEN;
+    const db = await getDb();
+    const textLower = rawText.toLowerCase();
 
-    let parsedData;
-
-    if (accountId && apiToken) {
-      // Execute Cloudflare AI
-      const systemPrompt = `
-      Você é um assistente especialista em catálogos de autopeças.
-      Sua tarefa é extrair as informações de uma peça automotiva a partir de um texto não estruturado escrito por um mecânico ou lojista.
-      
-      REGRAS CRÍTICAS DE EXTRAÇÃO:
-      1. Extraia o NOME GENÉRICO da peça (nomeDaPeca). Ex: "Para-choque Dianteiro", "Pastilha de Freio Dianteira", "Farol Direito", "Filtro de Ar".
-      2. REMOVA RIGOROSAMENTE do nomeDaPeca qualquer menção a modelo de carro ou ano! Ex: Se o texto for "Farol direito audi A3 1998", nomeDaPeca DEVE ser "Farol Direito". Se for "Filtro de ar corsa 1998", nomeDaPeca DEVE ser "Filtro de Ar".
-      3. Extraia o nome do fabricante (fabricante) se houver (ex: Bosch, Cobreq, Fremax). Caso contrário, retorne "Desconhecido".
-      4. Extraia o código do fabricante (codigoPeca) se houver.
-      5. Você DEVE retornar APENAS um JSON válido no formato:
-      {
-        "nomeDaPeca": "string",
-        "fabricante": "string",
-        "codigoPeca": "string"
-      }`;
-
-      const aiResponse = await fetch(
-        `https://api.cloudflare.com/client/v4/accounts/${accountId}/ai/run/@cf/meta/llama-3-8b-instruct`,
-        {
-          headers: { Authorization: `Bearer ${apiToken}`, "Content-Type": "application/json" },
-          method: "POST",
-          body: JSON.stringify({
-            messages: [
-              { role: "system", content: systemPrompt },
-              { role: "user", content: rawText }
-            ]
-          })
-        }
-      );
-
-      if (!aiResponse.ok) {
-        throw new Error("Erro na API de Inteligência Artificial");
+    // 1. Extract clean part name from dictionary or sanitize
+    let nomeDaPeca = "";
+    for (const item of PART_DICTIONARY) {
+      if (item.pattern.test(rawText)) {
+        nomeDaPeca = item.cleanName;
+        break;
       }
+    }
 
-      const aiResult = (await aiResponse.json()) as any;
-      const responseText = aiResult.result.response;
-      
-      // Clean up the text in case Llama returned markdown formatting
-      const cleanJson = responseText.replace(/```json/g, "").replace(/```/g, "").trim();
-      parsedData = JSON.parse(cleanJson);
+    if (!nomeDaPeca) {
+      // Fallback: Strip years and known car models/brands
+      let cleaned = rawText.replace(/\b(19\d{2}|20\d{2})\b/g, "");
+      KNOWN_BRANDS.forEach((b) => b.search.forEach((s) => (cleaned = cleaned.replace(new RegExp(`\\b${s}\\b`, "gi"), ""))));
+      KNOWN_MODELS.forEach((m) => m.search.forEach((s) => (cleaned = cleaned.replace(new RegExp(`\\b${s}\\b`, "gi"), ""))));
+      cleaned = cleaned.replace(/\s+/g, " ").trim();
+      nomeDaPeca = cleaned ? cleaned.charAt(0).toUpperCase() + cleaned.slice(1) : "Peça Automotiva";
+    }
+
+    // 2. Extract brand, model, year
+    let extractedBrand = "";
+    for (const b of KNOWN_BRANDS) {
+      if (b.search.some((s) => textLower.includes(s))) {
+        extractedBrand = b.name;
+        break;
+      }
+    }
+
+    let extractedModel = "";
+    for (const m of KNOWN_MODELS) {
+      if (m.search.some((s) => textLower.includes(s))) {
+        extractedModel = m.name;
+        break;
+      }
+    }
+
+    const yearMatch = rawText.match(/\b(19\d{2}|20\d{2})\b/);
+    const extractedYear = yearMatch ? yearMatch[1] : "";
+
+    // 3. Database Lookup for D1 brandId & modelId
+    let brandId = "";
+    let modelId = "";
+
+    if (extractedBrand) {
+      const bRows = await db
+        .select({ id: schema.brands.id, name: schema.brands.name })
+        .from(schema.brands)
+        .where(like(schema.brands.name, `%${extractedBrand}%`))
+        .limit(1);
+      if (bRows[0]) {
+        brandId = bRows[0].id;
+      }
+    }
+
+    if (extractedModel) {
+      const mConditions = [like(schema.carModels.name, `%${extractedModel}%`)];
+      if (brandId) {
+        mConditions.push(eq(schema.carModels.brandId, brandId));
+      }
+      const mRows = await db
+        .select({ id: schema.carModels.id, brandId: schema.carModels.brandId })
+        .from(schema.carModels)
+        .where(and(...mConditions))
+        .limit(1);
+      if (mRows[0]) {
+        modelId = mRows[0].id;
+        if (!brandId) brandId = mRows[0].brandId;
+      }
+    }
+
+    // 4. Check if part ALREADY exists in master_parts (catalog mestre)
+    let partId = "";
+    const masterSearch = await db
+      .select({ id: schema.masterParts.id, name: schema.masterParts.name, manufacturer: schema.masterParts.manufacturer })
+      .from(schema.masterParts)
+      .where(like(schema.masterParts.name, `%${nomeDaPeca}%`))
+      .limit(1);
+
+    if (masterSearch[0]) {
+      partId = masterSearch[0].id;
+      nomeDaPeca = masterSearch[0].name;
     } else {
-      // MOCK FALLBACK: Return clean generic part name
-      console.warn("CLOUDFLARE_ACCOUNT_ID ou CLOUDFLARE_API_TOKEN não encontrados. Usando Mock IA.");
-      parsedData = {
-        nomeDaPeca: sanitizePartName(rawText),
-        fabricante: "Desconhecido",
-        codigoPeca: "N/A"
-      };
+      // Create clean master part
+      const catRows = await db.select({ id: schema.categories.id }).from(schema.categories).limit(1);
+      let categoryId = catRows[0]?.id || "c-1";
+
+      const code = `IA-${crypto.randomUUID().substring(0, 8).toUpperCase()}`;
+      partId = crypto.randomUUID();
+
+      await db.insert(schema.masterParts).values({
+        id: partId,
+        name: nomeDaPeca,
+        manufacturer: "Original",
+        manufacturerCode: code,
+        categoryId,
+        description: `Extraído via IA de: "${rawText}"`,
+      }).onConflictDoNothing();
     }
 
-    // Always sanitize nomeDaPeca to ensure no years stay in title
-    if (parsedData.nomeDaPeca) {
-      parsedData.nomeDaPeca = sanitizePartName(parsedData.nomeDaPeca);
-    }
-
-    // Ensure unique code for master_parts constraint
-    let code = parsedData.codigoPeca;
-    if (!code || code === "N/A" || code === "Desconhecido") {
-      code = `IA-${crypto.randomUUID().substring(0, 8).toUpperCase()}`;
-    }
-
-    let partId = crypto.randomUUID();
-    
-    await withDbOrMock(
-      async (db) => {
-        // Check if masterPart with this code already exists
-        const existing = await db
-          .select({ id: schema.masterParts.id })
-          .from(schema.masterParts)
-          .where(eq(schema.masterParts.manufacturerCode, code))
-          .limit(1);
-
-        if (existing.length > 0) {
-          partId = existing[0].id;
-        } else {
-          // Ensure categoryId exists or use/create default category
-          const catRows = await db
-            .select({ id: schema.categories.id })
-            .from(schema.categories)
-            .limit(1);
-
-          let categoryId = catRows[0]?.id;
-          if (!categoryId) {
-            categoryId = "c-1";
-            await db.insert(schema.categories).values({
-              id: categoryId,
-              name: "Geral",
-              slug: "geral",
-            }).onConflictDoNothing();
-          }
-
-          const inserted = await db.insert(schema.masterParts).values({
-            id: partId,
-            name: parsedData.nomeDaPeca,
-            manufacturer: parsedData.fabricante || "Geral",
-            manufacturerCode: code,
-            categoryId,
-            description: `Extraído via IA do texto original: "${rawText}"`,
-          }).returning({ id: schema.masterParts.id });
-
-          if (inserted.length > 0) {
-            partId = inserted[0].id;
-          }
-        }
-      },
-      () => { console.log("Mock db insert for AI part") }
-    );
-
-    return NextResponse.json({ 
-      success: true, 
-      partId: partId,
+    return NextResponse.json({
+      success: true,
+      partId,
       extractedData: {
-        ...parsedData,
-        codigoPeca: code
-      } 
+        nomeDaPeca,
+        fabricante: "Original",
+        codigoPeca: `IA-${partId.substring(0, 8).toUpperCase()}`,
+        montadora: extractedBrand,
+        modelo: extractedModel,
+        ano: extractedYear,
+        brandId,
+        modelId,
+      },
     });
-
   } catch (error: any) {
     console.error("AI Parser error:", error);
-    return NextResponse.json(
-      { error: error.message || "Erro ao processar texto com a IA" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: error.message || "Erro ao processar com IA" }, { status: 500 });
   }
 }

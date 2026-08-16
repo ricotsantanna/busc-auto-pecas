@@ -296,16 +296,28 @@ export default function LojistaEstoque() {
       const data = await res.json();
       
       if (res.ok) {
-        // AI successfully parsed and added to masterParts (unapproved)
-        // Now open the regular offer modal with this part
         setIsAiModalOpen(false);
         setAiRawText("");
         setSelectedPart({
           id: data.partId,
           name: data.extractedData.nomeDaPeca,
-          manufacturer: data.extractedData.fabricante,
+          manufacturer: data.extractedData.fabricante || "Original",
           partNumber: data.extractedData.codigoPeca,
         });
+        setManufacturerName(data.extractedData.fabricante || "Original");
+
+        // Pre-select Montadora, Modelo and Ano if identified by AI!
+        if (data.extractedData.brandId) {
+          setSelectedBrand(data.extractedData.brandId);
+        }
+        if (data.extractedData.modelId) {
+          setSelectedModel(data.extractedData.modelId);
+        }
+        if (data.extractedData.ano) {
+          setSelectedYear(data.extractedData.ano);
+        }
+
+        setStep(1);
       } else {
         alert(data.error || "Erro ao processar com IA");
       }
