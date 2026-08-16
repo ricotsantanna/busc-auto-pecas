@@ -569,9 +569,10 @@ export default function HomePage() {
               Não sabe o nome exato da peça? Comece pela categoria e refine.
             </p>
           </div>
-          <div className="text-sm text-brand-muted">
-            {categories.reduce((acc, c) => acc + c.partCount, 0)} peças
-            catalogadas
+          <div className="text-sm font-semibold text-brand-primary bg-blue-50 px-3 py-1.5 rounded-lg border border-blue-100">
+            {categories.length > 0 && categories.reduce((acc, c) => acc + c.partCount, 0) > 0
+              ? `${categories.reduce((acc, c) => acc + c.partCount, 0).toLocaleString("pt-BR")} peças catalogadas`
+              : "27.458+ peças catalogadas"}
           </div>
         </div>
 
@@ -669,9 +670,9 @@ export default function HomePage() {
           </div>
           <div className="grid grid-cols-2 gap-4">
             {[
-              { k: "Peças no catálogo", v: "12.480+" },
-              { k: "Lojas parceiras", v: "340+" },
-              { k: "Buscas / mês", v: "98 mil" },
+              { k: "Peças no catálogo", v: "27.458+" },
+              { k: "Marcas catalogadas", v: "704+" },
+              { k: "Modelos atendidos", v: "14.631+" },
               { k: "Economia média", v: "32%" },
             ].map((s) => (
               <div
@@ -689,15 +690,17 @@ export default function HomePage() {
       </section>
 
       {/* ==================== FOOTER ==================== */}
-      <footer className="mt-auto">
-        <div className="container py-8 flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-brand-muted">
-          <div>
-            © {new Date().getFullYear()} BuscAutoPeças — buscautopecas.com.br
+      <footer className="mt-auto bg-slate-900 text-slate-400 py-10 border-t border-slate-800">
+        <div className="container flex flex-col md:flex-row items-center justify-between gap-6 text-sm">
+          <div className="space-y-1 text-center md:text-left">
+            <div className="font-bold text-white text-base">BuscAutoPeças</div>
+            <div>© {new Date().getFullYear()} BuscAutoPeças — buscautopecas.com.br</div>
+            <div className="text-xs text-slate-500">CNPJ: Em homologação/pendente | Conectando lojistas e oficinas em todo o Brasil</div>
           </div>
-          <div className="flex items-center gap-4">
-            <a href="#" className="hover:text-brand-primary">Termos</a>
-            <a href="#" className="hover:text-brand-primary">Privacidade</a>
-            <a href="#" className="hover:text-brand-primary">Contato</a>
+          <div className="flex items-center gap-6">
+            <a href="/termos" className="hover:text-white transition">Termos de Uso</a>
+            <a href="/privacidade" className="hover:text-white transition">Privacidade (LGPD)</a>
+            <a href="/contato" className="hover:text-white transition">Contato & Suporte</a>
           </div>
         </div>
       </footer>

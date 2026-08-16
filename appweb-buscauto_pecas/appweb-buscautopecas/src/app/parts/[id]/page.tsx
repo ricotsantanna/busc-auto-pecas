@@ -160,6 +160,26 @@ function PartDetailInner() {
 
   return (
     <div className="min-h-screen bg-brand-bg">
+      {data?.part && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org/",
+              "@type": "Product",
+              name: data.part.name,
+              mpn: data.part.manufacturerCode,
+              offers: {
+                "@type": "AggregateOffer",
+                priceCurrency: "BRL",
+                lowPrice: data.meta.minPrice || 0,
+                highPrice: data.meta.maxPrice || 0,
+                offerCount: data.meta.storeCount || 0,
+              },
+            }),
+          }}
+        />
+      )}
       <header className="bg-brand-primary text-white shadow-sm">
         <div className="container flex items-center justify-between h-16">
           <Link href="/" className="flex items-center gap-3">
