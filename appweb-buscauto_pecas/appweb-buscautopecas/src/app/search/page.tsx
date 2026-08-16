@@ -86,6 +86,12 @@ function FilterOptions({
   setCity,
   onlyStock,
   setOnlyStock,
+  minPrice,
+  setMinPrice,
+  maxPrice,
+  setMaxPrice,
+  sortBy,
+  setSortBy,
   cities,
 }: {
   condition: ConditionFilter;
@@ -94,26 +100,46 @@ function FilterOptions({
   setCity: (c: string) => void;
   onlyStock: boolean;
   setOnlyStock: (s: boolean) => void;
+  minPrice: string;
+  setMinPrice: (p: string) => void;
+  maxPrice: string;
+  setMaxPrice: (p: string) => void;
+  sortBy: string;
+  setSortBy: (s: string) => void;
   cities: string[];
 }) {
   return (
     <>
+      {/* Ordenação */}
+      <div className="mb-5">
+        <div className="text-xs font-semibold uppercase text-brand-muted mb-2">Ordenar por</div>
+        <select
+          className="field h-10 w-full font-medium text-slate-800"
+          value={sortBy}
+          onChange={(e) => setSortBy(e.target.value)}
+        >
+          <option value="price_asc">Menor preço primeiro</option>
+          <option value="price_desc">Maior preço primeiro</option>
+          <option value="rating_desc">Melhor avaliação da loja</option>
+        </select>
+      </div>
+
       {/* Condição */}
       <div className="mb-5">
-        <div className="text-xs font-semibold uppercase text-brand-muted mb-2">Condição</div>
+        <div className="text-xs font-semibold uppercase text-brand-muted mb-2">Estado da Peça</div>
         <div className="space-y-2">
           {(
             [
-              { key: "ALL", label: "Todas", icon: <Package className="h-4 w-4" /> },
+              { key: "ALL", label: "Todas as peças", icon: <Package className="h-4 w-4" /> },
               { key: "NOVO", label: "Apenas Novas", icon: <BadgeCheck className="h-4 w-4 text-emerald-600" /> },
               { key: "USADO", label: "Apenas Usadas", icon: <History className="h-4 w-4 text-amber-600" /> },
             ] as { key: ConditionFilter; label: string; icon: JSX.Element }[]
           ).map((opt) => (
             <label
               key={opt.key}
-              className={`flex items-center gap-2 rounded-lg px-3 py-2 cursor-pointer border text-sm transition ${
+              className={`flex items-center gap-2 rounded-xl px-3 py-2.5 cursor-pointer border text-sm transition ${
                 condition === opt.key
-                  ? "border-brand-primary bg-blue-50 text-brand-primary font-semibold"
+                  ? "border-brand-primary bg-blue-50 text-brand-primary font-semibold shadow-xs"
                   : "border-slate-200 hover:bg-slate-50 text-brand-muted"
               }`}
             >
@@ -131,20 +157,67 @@ function FilterOptions({
         </div>
       </div>
 
+      {/* Faixa de Preço */}
+      <div className="mb-5">
+        <div className="text-xs font-semibold uppercase text-brand-muted mb-2">Faixa de Preço (R$)</div>
+        <div className="grid grid-cols-2 gap-2 mb-2">
+          <input
+            type="number"
+            placeholder="Mín"
+            className="field h-9 text-xs px-2.5"
+            value={minPrice}
+            onChange={(e) => setMinPrice(e.target.value)}
+          />
+          <input
+            type="number"
+            placeholder="Máx"
+            className="field h-9 text-xs px-2.5"
+            value={maxPrice}
+            onChange={(e) => setMaxPrice(e.target.value)}
+          />
+        </div>
+        {/* Quick price pills */}
+        <div className="flex flex-wrap gap-1">
+          {[
+            { label: "Até R$ 100", max: "100" },
+            { label: "Até R$ 300", max: "300" },
+            { label: "Até R$ 500", max: "500" },
+          ].map((p) => (
+            <button
+              key={p.label}
+              type="button"
+              onClick={() => {
+                setMinPrice("");
+                setMaxPrice(p.max);
+              }}
+              className={`text-[11px] px-2 py-1 rounded-md border transition ${
+                maxPrice === p.max && !minPrice
+                  ? "bg-brand-primary text-white border-brand-primary font-bold"
+                  : "bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100"
+              }`}
+            >
+              {p.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
       {/* Cidade */}
       <div className="mb-5">
-        <div className="text-xs font-semibold uppercase text-brand-muted mb-2">Cidade</div>
+        <div className="text-xs font-semibold uppercase text-brand-muted mb-2">Cidade da Loja</div>
         <select className="field h-10 w-full" value={city} onChange={(e) => setCity(e.target.value)}>
           <option value="ALL">Todas as cidades</option>
           {cities.map((c) => (
-            <option key={c} value={c}>{c}</option>
+            <option key={c} value={c}>
+              {c}
+            </option>
           ))}
         </select>
       </div>
 
       {/* Estoque */}
-      <label className="flex items-center justify-between gap-2 rounded-lg px-3 py-2 border border-slate-200 cursor-pointer hover:bg-slate-50">
-        <span className="text-sm text-brand-ink font-medium">Só em estoque</span>
+      <label className="flex items-center justify-between gap-2 rounded-xl px-3 py-2.5 border border-slate-200 cursor-pointer hover:bg-slate-50 transition">
+        <span className="text-sm text-brand-ink font-medium">Somente em estoque</span>
         <span
           className={`relative inline-flex h-5 w-9 items-center rounded-full transition ${
             onlyStock ? "bg-brand-primary" : "bg-slate-300"
@@ -178,9 +251,12 @@ function SearchInner() {
   const [data, setData] = useState<SearchResponse | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // filtros do lateral
+  // filtros
   const [condition, setCondition] = useState<ConditionFilter>("ALL");
   const [city, setCity] = useState<string>("ALL");
+  const [minPrice, setMinPrice] = useState<string>("");
+  const [maxPrice, setMaxPrice] = useState<string>("");
+  const [sortBy, setSortBy] = useState<string>("price_asc");
   const [onlyStock, setOnlyStock] = useState<boolean>(true);
 
   useEffect(() => {
@@ -218,7 +294,6 @@ function SearchInner() {
 
     load().finally(() => !cancel && setLoading(false));
 
-    // reage a mudan\u00e7as no localStorage (ex.: outra aba /inventory)
     const onChange = () => load();
     window.addEventListener("buscautopecas:offers-changed", onChange);
     window.addEventListener("storage", onChange);
@@ -231,13 +306,37 @@ function SearchInner() {
 
   const filteredOffers = useMemo(() => {
     if (!data) return [];
-    return data.offers.filter((o) => {
+    let list = data.offers.filter((o) => {
       if (condition !== "ALL" && o.condition !== condition) return false;
       if (city !== "ALL" && `${o.storeCity}/${o.storeState}` !== city) return false;
       if (onlyStock && !o.inStock) return false;
+      if (minPrice && o.price < parseFloat(minPrice)) return false;
+      if (maxPrice && o.price > parseFloat(maxPrice)) return false;
       return true;
     });
-  }, [data, condition, city, onlyStock]);
+
+    if (sortBy === "price_asc") {
+      list.sort((a, b) => a.price - b.price);
+    } else if (sortBy === "price_desc") {
+      list.sort((a, b) => b.price - a.price);
+    } else if (sortBy === "rating_desc") {
+      list.sort((a, b) => b.storeRating - a.storeRating);
+    }
+
+    return list;
+  }, [data, condition, city, onlyStock, minPrice, maxPrice, sortBy]);
+
+  const resetFilters = () => {
+    setCondition("ALL");
+    setCity("ALL");
+    setMinPrice("");
+    setMaxPrice("");
+    setOnlyStock(false);
+    setSortBy("price_asc");
+  };
+
+  const hasActiveFilters =
+    condition !== "ALL" || city !== "ALL" || minPrice !== "" || maxPrice !== "" || !onlyStock;
 
   const stats = useMemo(() => {
     if (!filteredOffers.length)
@@ -356,7 +455,7 @@ function SearchInner() {
           <Drawer>
             <DrawerTrigger asChild>
               <button className="w-full flex items-center justify-center gap-2 bg-white border border-slate-300 text-brand-ink rounded-xl h-11 font-semibold shadow-sm active:bg-slate-50 transition">
-                <Filter className="h-4 w-4" /> Filtrar resultados
+                <Filter className="h-4 w-4" /> Filtrar resultados {hasActiveFilters && "• (Ativos)"}
               </button>
             </DrawerTrigger>
             <DrawerContent>
@@ -371,6 +470,12 @@ function SearchInner() {
                   setCity={setCity}
                   onlyStock={onlyStock}
                   setOnlyStock={setOnlyStock}
+                  minPrice={minPrice}
+                  setMinPrice={setMinPrice}
+                  maxPrice={maxPrice}
+                  setMaxPrice={setMaxPrice}
+                  sortBy={sortBy}
+                  setSortBy={setSortBy}
                   cities={data?.meta.cities ?? []}
                 />
               </div>
@@ -392,8 +497,18 @@ function SearchInner() {
           {/* SIDEBAR FILTROS */}
           <aside className="hidden md:block md:sticky md:top-6 h-fit space-y-4">
             <div className="bg-white ring-1 ring-slate-200 rounded-2xl p-5">
-              <div className="flex items-center gap-2 text-brand-ink font-semibold mb-4">
-                <Filter className="h-4 w-4" /> Filtros
+              <div className="flex items-center justify-between text-brand-ink font-semibold mb-4">
+                <div className="flex items-center gap-2">
+                  <Filter className="h-4 w-4 text-brand-primary" /> Filtros
+                </div>
+                {hasActiveFilters && (
+                  <button
+                    onClick={resetFilters}
+                    className="text-xs text-brand-primary hover:underline font-normal"
+                  >
+                    Limpar
+                  </button>
+                )}
               </div>
 
               <FilterOptions
@@ -403,6 +518,12 @@ function SearchInner() {
                 setCity={setCity}
                 onlyStock={onlyStock}
                 setOnlyStock={setOnlyStock}
+                minPrice={minPrice}
+                setMinPrice={setMinPrice}
+                maxPrice={maxPrice}
+                setMaxPrice={setMaxPrice}
+                sortBy={sortBy}
+                setSortBy={setSortBy}
                 cities={data?.meta.cities ?? []}
               />
             </div>
@@ -421,6 +542,37 @@ function SearchInner() {
 
           {/* LISTA DE OFERTAS */}
           <section>
+            {/* Active filter badges */}
+            {hasActiveFilters && (
+              <div className="mb-4 flex items-center flex-wrap gap-2 bg-white rounded-xl p-3 ring-1 ring-slate-200 text-xs">
+                <span className="font-bold text-slate-700">Filtros ativos:</span>
+                {condition !== "ALL" && (
+                  <span className="inline-flex items-center gap-1 bg-blue-50 text-brand-primary px-2.5 py-1 rounded-md font-semibold border border-blue-100">
+                    {condition === "NOVO" ? "Peças Novas" : "Peças Usadas"}
+                    <button onClick={() => setCondition("ALL")} className="hover:text-red-500">×</button>
+                  </span>
+                )}
+                {city !== "ALL" && (
+                  <span className="inline-flex items-center gap-1 bg-slate-100 text-slate-800 px-2.5 py-1 rounded-md font-semibold border border-slate-200">
+                    Loja: {city}
+                    <button onClick={() => setCity("ALL")} className="hover:text-red-500">×</button>
+                  </span>
+                )}
+                {(minPrice || maxPrice) && (
+                  <span className="inline-flex items-center gap-1 bg-emerald-50 text-emerald-800 px-2.5 py-1 rounded-md font-semibold border border-emerald-200">
+                    Preço: {minPrice ? `R$ ${minPrice}` : "R$ 0"} até {maxPrice ? `R$ ${maxPrice}` : "∞"}
+                    <button onClick={() => { setMinPrice(""); setMaxPrice(""); }} className="hover:text-red-500">×</button>
+                  </span>
+                )}
+                <button
+                  onClick={resetFilters}
+                  className="ml-auto text-xs text-red-600 font-bold hover:underline"
+                >
+                  Limpar todos os filtros
+                </button>
+              </div>
+            )}
+
             {loading && (
               <div className="space-y-3">
                 {[...Array(4)].map((_, i) => (
@@ -442,15 +594,17 @@ function SearchInner() {
             {!loading && filteredOffers.length === 0 && (
               <div className="bg-white ring-1 ring-slate-200 rounded-2xl p-10 text-center">
                 <StoreIcon className="h-10 w-10 mx-auto text-slate-300" />
-                <div className="mt-3 font-semibold text-brand-ink">
-                  Nenhuma loja atende esses filtros ainda
+                <div className="mt-3 font-semibold text-brand-ink text-lg">
+                  Nenhuma loja atende estes filtros
                 </div>
-                <p className="text-sm text-brand-muted mt-1">
-                  Tente afrouxar os filtros ou refazer a busca com outro termo.
+                <p className="text-sm text-brand-muted mt-1 max-w-md mx-auto">
+                  Não encontramos ofertas correspondentes à combinação de preço, condição ou cidade selecionada.
                 </p>
-                <Link href="/" className="btn-primary mt-6">
-                  <SearchIcon className="h-4 w-4" /> Fazer nova busca
-                </Link>
+                <div className="mt-6 flex justify-center gap-3">
+                  <button onClick={resetFilters} className="btn-primary">
+                    <Filter className="h-4 w-4" /> Limpar filtros e ver todas
+                  </button>
+                </div>
               </div>
             )}
 
