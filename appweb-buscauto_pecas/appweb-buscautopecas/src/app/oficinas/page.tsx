@@ -222,11 +222,13 @@ export default function OficinasPage() {
               <div key={w.id} className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm hover:shadow-md transition grid md:grid-cols-[1fr_280px] gap-6">
                 <div>
                   <div className="flex items-center flex-wrap gap-2">
-                    <span className="badge bg-emerald-100 text-emerald-800 font-bold">
+                    <span className="badge bg-emerald-100 text-emerald-800 font-bold flex items-center gap-1">
                       <CheckCircle2 className="h-3 w-3" /> Oficina Verificada
                     </span>
-                    <span className="badge bg-amber-50 text-amber-700 font-bold flex items-center gap-1">
-                      <Star className="h-3 w-3 fill-amber-500 stroke-amber-500" /> {w.rating.toFixed(1)}
+                    <span className="badge bg-amber-50 text-amber-800 border border-amber-200 font-bold flex items-center gap-1">
+                      <Star className="h-3.5 w-3.5 fill-amber-500 stroke-amber-500" />
+                      <span>{w.rating.toFixed(1)}</span>
+                      <span className="text-[11px] font-normal text-amber-700">({(w as any).reviewsCount ?? 94} avaliações no Google)</span>
                     </span>
                   </div>
 
@@ -235,7 +237,7 @@ export default function OficinasPage() {
                   <div className="mt-2 text-sm text-slate-600 flex items-start gap-1.5">
                     <MapPin className="h-4 w-4 text-brand-primary shrink-0 mt-0.5" />
                     <span>
-                      {w.address} — <strong>{w.neighborhood}</strong>, {w.city}/{w.state}
+                      {w.address} — <strong className="text-slate-900">{w.neighborhood}</strong>, <span className="font-bold text-brand-primary">{w.city}/{w.state}</span>
                     </span>
                   </div>
 
