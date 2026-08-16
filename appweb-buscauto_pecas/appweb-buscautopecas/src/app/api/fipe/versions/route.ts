@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { withDbOrMock, schema } from "@/db";
-import { eq, asc, desc } from "drizzle-orm";
+import { eq, asc, desc, and, gte } from "drizzle-orm";
 
 export const runtime = "edge";
 
@@ -16,16 +16,18 @@ export async function GET(req: NextRequest) {
     let versionsData: any[] = [];
     await withDbOrMock(
       async (db) => {
-        const rows = await db.select({
-          id: schema.carVersions.id,
-          versionName: schema.carVersions.versionName,
-          year: schema.carVersions.year,
-          engine: schema.carVersions.engine,
-        }).from(schema.carVersions)
-          .where(eq(schema.carVersions.modelId, modelId))
+        const rows = await db
+          .select({
+            id: schema.carVersions.id,
+            versionName: schema.carVersions.versionName,
+            year: schema.carVersions.year,
+            engine: schema.carVersions.engine,
+          })
+          .from(schema.carVersions)
+          .where(and(eq(schema.carVersions.modelId, modelId), gte(schema.carVersions.year, 1950)))
           .orderBy(desc(schema.carVersions.year), asc(schema.carVersions.versionName));
-        
-        versionsData = rows.map(r => ({
+
+        versionsData = rows.map((r) => ({
           id: r.id,
           name: r.versionName,
           versionName: r.versionName,
@@ -35,7 +37,7 @@ export async function GET(req: NextRequest) {
       },
       () => {
         versionsData = [
-          { id: "v-palio-1", name: "Palio Fire", versionName: "Palio Fire", year: 2014, engine: "N/A" }
+          { id: "v-palio-1", name: "Palio Fire", versionName: "Palio Fire", year: 2014, engine: "N/A" },
         ];
       }
     );
