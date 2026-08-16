@@ -343,3 +343,32 @@ export const syncState = sqliteTable(
     updatedAt: updatedAt(),
   }
 );
+
+// ============================================================
+// 11) WORKSHOPS — Oficinas Mecânicas Cadastradas
+// ============================================================
+export const workshops = sqliteTable(
+  "workshops",
+  {
+    id: uuid(),
+    name: text("name").notNull(),
+    address: text("address").notNull(),
+    neighborhood: text("neighborhood"),
+    city: text("city").notNull(),
+    state: text("state").notNull(),
+    phone: text("phone"),
+    whatsapp: text("whatsapp"),
+    rating: real("rating").default(5.0),
+    specialties: text("specialties"), // e.g. "Freios, Suspensão, Injeção Eletrônica"
+    lat: real("lat"),
+    lng: real("lng"),
+    isVerified: integer("is_verified", { mode: "boolean" }).default(true),
+    createdAt: createdAt(),
+  },
+  (t) => ({
+    cityIdx: index("workshops_city_idx").on(t.city),
+  })
+);
+
+export type Workshop = typeof workshops.$inferSelect;
+export type NewWorkshop = typeof workshops.$inferInsert;

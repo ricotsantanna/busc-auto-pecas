@@ -225,7 +225,9 @@ export default function HomePage() {
           </div>
           <nav className="hidden md:flex items-center gap-6 text-sm font-medium text-white/90">
             <a href="#como-funciona" className="hover:text-white transition">Como funciona</a>
-            <a href="/login" className="hover:text-white transition">Sou lojista</a>
+            <a href="/oficinas" className="hover:text-white transition flex items-center gap-1.5 font-bold text-orange-300 hover:text-orange-200">
+              <Wrench className="h-4 w-4" /> Oficinas Mecânicas
+            </a>
             <a
               href="/login"
               className="inline-flex items-center gap-1 rounded-lg bg-white/10 hover:bg-white/20 px-3 py-1.5 ring-1 ring-white/20 transition"
