@@ -1,24 +1,42 @@
-// src/lib/part-sanitizer.ts — Utilitário de Saneamento e Limpeza de Nomes de Peças Automotivas
+// src/lib/part-sanitizer.ts — Utilitário Avançado de Saneamento e Limpeza de Nomes de Peças Automotivas
 
+// Marcas/Montadoras de carros, caminhões e motos para remoção do nome da peça
 const BRAND_NOISE = [
   "VOLVO FH", "VOLVO FM", "VOLVO NH", "VOLVO",
   "SCANIA D124", "SCANIA113", "SCANIA112", "SCANIA",
   "MERCEDES-BENZ", "MERCEDES BENZ", "MECEDES", "MB",
   "CHEVROLET", "CHEVR", "GM", "VW", "VOLKSWAGEN", "FIAT", "FORD",
   "AUDI", "BMW", "TOYOTA", "HONDA", "HYUNDAI", "RENAULT", "NISSAN",
-  "JEEP", "PEUGEOT", "CITROEN", "MITSUBISHI", "CHERY", "BYD", "HAVAL", "SUZUKI"
+  "JEEP", "PEUGEOT", "CITROEN", "CITROËN", "MITSUBISHI", "CHERY", "BYD", "HAVAL",
+  "YAMAHA", "SUZUKI", "KAWASAKI", "DUCATI", "BMW MOTO", "TRIUMPH"
 ];
 
+// Modelos de carros, utilitários, caminhões e motos para remoção do nome mestre
 const MODEL_NOISE = [
+  // Motos
+  "FACTOR", "FAZER", "YBR125", "YBR", "XTZ125", "XTZ250", "XTZ", "XT660", "XT660R", "XT", "LANDER250", "LANDER", "CROSSER", "NMAX", "XMAX",
+  "TITAN150", "TITAN160", "TITAN125", "TITAN", "FAN125", "FAN150", "FAN160", "FAN", "BROS150", "BROS160", "BROS", "NXR",
+  "BIZ100", "BIZ125", "BIZ", "TWISTER", "CBX250", "CBX", "CB300R", "CB300", "CB250F", "CB500", "XRE300", "XRE190", "XRE",
+  "FALCON", "NX400", "CG125", "CG150", "CG160", "CG", "PCX", "BURGMAN", "POP100", "POP110", "SCOOTER",
+  // Carros e Utilitários
   "FH12", "FH13", "FH440", "FH460", "FH500", "FH", "FM12", "FM", "D124", "P94", "R113", "T113",
-  "GOL", "PALIO", "CORSA", "UNO", "CELTA", "CIVIC", "COROLLA", "FIT", "KA", "FIESTA", "FOCUS",
-  "ECOSPORT", "SAVEIRO", "STRADA", "HILUX", "AMAROK", "RANGER", "S10", "SPIN", "ONIX", "PRISMA",
-  "COBALT", "CRUZE", "TRACKER", "EQUINOX", "MONTANA", "ASTRA", "VECTRA", "ZAFIRA", "MERIVA",
-  "KADETT", "MONZA", "CHEVETTE", "A3", "A4", "A5", "Q3", "Q5", "320I", "325I", "528I", "X1", "X3", "X5"
+  "C3", "C4", "C5", "AIRCROSS", "FIORINO", "PALIO", "UNO", "GOL", "CELTA", "CORSA", "CIVIC", "COROLLA", "FIT", "KA", "FIESTA", "FOCUS",
+  "ECOSPORT", "SAVEIRO", "STRADA", "HILUX", "AMAROK", "RANGER", "S10", "SPIN", "ONIX", "PRISMA", "COBALT", "CRUZE", "TRACKER", "EQUINOX",
+  "MONTANA", "ASTRA", "VECTRA", "ZAFIRA", "MERIVA", "KADETT", "MONZA", "CHEVETTE", "KWID", "SANDERO", "DUSTER", "LOGAN", "ARGO", "MOBI",
+  "TORO", "CRONOS", "RENEGADE", "COMPASS", "CRETA", "HB20", "KICKS", "VERSA", "MARCH", "208", "308", "2008", "HRV", "WRV", "WR-V",
+  "A3", "A4", "A5", "Q3", "Q5", "320I", "325I", "528I", "X1", "X3", "X5"
 ];
 
+// Termos de posição e lados
 const SIDE_NOISE = [
   "LADO DIREITO", "LADO ESQUERDO", "L/D", "L/E", "L.D.", "L.E.", "LD", "LE", "LH", "RH"
+];
+
+// Marcas de motos para filtragem cruzada de segmento
+export const MOTORCYCLE_BRANDS_MODELS = [
+  "yamaha", "factor", "fazer", "ybr", "xtz", "xt660", "lander", "crosser", "nmax", "xmax",
+  "titan", "fan", "bros", "biz", "twister", "cbx", "cb300", "xre", "falcon", "cg125", "cg150", "cg160",
+  "burgman", "pop100", "suzuki moto", "kawasaki", "ducati", "triumph"
 ];
 
 export function cleanMasterPartTitle(rawName: string): string {
@@ -26,13 +44,16 @@ export function cleanMasterPartTitle(rawName: string): string {
 
   let clean = rawName.trim();
 
-  // Remove marcas de veículos e caminhões conhecidas do título mestre
+  // Remove modelos com barras combinados (ex: Factor/xtz/ybr125 00, Fazer/lander250 06, Fazer250/xt660 09-11)
+  clean = clean.replace(/\b[A-Za-z0-9]+(?:\/[A-Za-z0-9]+)+(?:\s+\d{2}(?:-\d{2})?)?\b/gi, "");
+
+  // Remove marcas de veículos conhecidas do título mestre
   for (const b of BRAND_NOISE) {
     const regex = new RegExp(`\\b${b}\\b`, "gi");
     clean = clean.replace(regex, "");
   }
 
-  // Remove modelos conhecidos
+  // Remove modelos de veículos conhecidos do título mestre
   for (const m of MODEL_NOISE) {
     const regex = new RegExp(`\\b${m}\\b`, "gi");
     clean = clean.replace(regex, "");
@@ -44,6 +65,18 @@ export function cleanMasterPartTitle(rawName: string): string {
     clean = clean.replace(regex, "");
   }
 
+  // Remove códigos de ano isolados no final (ex: 00, 06, 14, 09-11)
+  clean = clean.replace(/\b\d{2}(?:-\d{2})?\b$/g, "");
+
+  // Padronizações frequentes
+  clean = clean.replace(/\bAutomático Partida\b/gi, "Automático de Partida");
+  clean = clean.replace(/\bMotor Partida\b/gi, "Motor de Partida");
+  clean = clean.replace(/\bPastilha Freio\b/gi, "Pastilha de Freio");
+  clean = clean.replace(/\bDisco Freio\b/gi, "Disco de Freio");
+  clean = clean.replace(/\bFiltro Oleo\b/gi, "Filtro de Óleo");
+  clean = clean.replace(/\bFiltro Ar\b/gi, "Filtro de Ar");
+  clean = clean.replace(/\bFiltro Combustivel\b/gi, "Filtro de Combustível");
+
   // Limpa hífens soltos, barras e múltiplos espaços
   clean = clean
     .replace(/\s+-\s+/g, " ")
@@ -52,7 +85,7 @@ export function cleanMasterPartTitle(rawName: string): string {
     .replace(/\s+/g, " ")
     .trim();
 
-  // Se a limpeza zerou a string, devolve o nome original
+  // Se a limpeza zerou a string, devolve a versão higienizada mínima
   if (!clean || clean.length < 3) {
     return rawName.trim();
   }

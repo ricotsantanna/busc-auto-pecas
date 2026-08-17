@@ -1,15 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDb, schema } from "@/db";
 import { like, or } from "drizzle-orm";
-import { cleanMasterPartTitle } from "@/lib/part-sanitizer";
+import { cleanMasterPartTitle, MOTORCYCLE_BRANDS_MODELS } from "@/lib/part-sanitizer";
 
 export const runtime = "edge";
 
-// GET /api/parts/search?q=farol&brand=BMW&model=325I
-// Retorna até 10 sugestões limpas e saneadas do catálogo mestre para autocomplete.
+// Known car brands for cross-brand conflict filtering
+const CAR_BRANDS = [
+  "fiat", "volkswagen", "vw", "chevrolet", "gm", "ford", "renault", "peugeot", "citroen", "citroën",
+  "toyota", "honda", "hyundai", "nissan", "jeep", "bmw", "audi", "mercedes", "volvo", "scania", "mitsubishi", "chery", "byd"
+];
+
 export async function GET(req: NextRequest) {
   const q = (req.nextUrl.searchParams.get("q") ?? "").trim();
+  const segment = (req.nextUrl.searchParams.get("segment") ?? "CARRO").toUpperCase();
   const brandName = (req.nextUrl.searchParams.get("brandName") ?? "").trim().toLowerCase();
+  const modelName = (req.nextUrl.searchParams.get("modelName") ?? "").trim().toLowerCase();
 
   if (q.length < 2) {
     return NextResponse.json({ parts: [] });
@@ -29,24 +35,32 @@ export async function GET(req: NextRequest) {
           like(schema.masterParts.name, `%${q.toUpperCase()}%`)
         )
       )
-      .limit(30);
+      .limit(60);
 
-    // Sanear nomes de peças (remover VOLVO, SCANIA, Lado Direito/Esquerdo)
     const cleanedNames: string[] = [];
-    
+
     for (const m of matches) {
       const raw = m.name;
-      // Se a busca especificou marca (ex: BMW) e o título original continha outra marca concorrente (ex: VOLVO, SCANIA), pula
-      if (brandName && brandName.length > 2) {
-        const lowerRaw = raw.toLowerCase();
-        const conflictingBrands = ["volvo", "scania", "mercedes", "iveco", "man", "daf"].filter(b => b !== brandName);
-        if (conflictingBrands.some(cb => lowerRaw.includes(cb))) {
+      const lowerRaw = raw.toLowerCase();
+
+      // 1. Filtrar peças de moto se o segmento selecionado for CARRO
+      if (segment === "CARRO") {
+        if (MOTORCYCLE_BRANDS_MODELS.some((m) => lowerRaw.includes(m))) {
           continue;
         }
       }
 
+      // 2. Se a busca especificou marca (ex: Ford, BMW), filtra peças que contenham marcas conflitantes no título original (ex: Fiat, Citroen, Volvo)
+      if (brandName && brandName.length >= 3) {
+        const conflictingBrands = CAR_BRANDS.filter((b) => b !== brandName && !brandName.includes(b));
+        if (conflictingBrands.some((cb) => lowerRaw.includes(cb))) {
+          continue;
+        }
+      }
+
+      // 3. Saneamento do nome (remove marcas, modelos e lados do texto)
       const clean = cleanMasterPartTitle(raw);
-      if (clean && !cleanedNames.includes(clean)) {
+      if (clean && clean.length >= 3 && !cleanedNames.includes(clean)) {
         cleanedNames.push(clean);
       }
     }
