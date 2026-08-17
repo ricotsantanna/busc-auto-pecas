@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { like, or } from "drizzle-orm";
 import { withDbOrMock, schema } from "@/db";
+import { cleanMasterPartTitle } from "@/lib/part-sanitizer";
 
 export const runtime = "edge";
 
@@ -43,7 +44,12 @@ export async function GET(req: NextRequest) {
       }
     );
 
-    return NextResponse.json({ parts });
+    const sanitizedParts = (parts || []).map((p) => ({
+      ...p,
+      name: cleanMasterPartTitle(p.name),
+    }));
+
+    return NextResponse.json({ parts: sanitizedParts });
   } catch (error: any) {
     console.error("Autocomplete search error:", error);
     return NextResponse.json({ error: "Erro ao buscar peças" }, { status: 500 });

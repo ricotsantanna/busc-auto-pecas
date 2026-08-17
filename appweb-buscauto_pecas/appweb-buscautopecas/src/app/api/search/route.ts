@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { getDb, schema } from "@/db";
 import { eq, or, like, and, desc, asc } from "drizzle-orm";
 
+import { cleanMasterPartTitle } from "@/lib/part-sanitizer";
+
 export const runtime = "edge";
 
 export async function GET(req: NextRequest) {
@@ -116,7 +118,7 @@ export async function GET(req: NextRequest) {
     let totalPrice = 0;
     const citiesSet = new Set<string>();
 
-    results.forEach((offer) => {
+    const sanitizedResults = results.map((offer) => {
       if (minPrice === null || offer.price < minPrice) {
         minPrice = offer.price;
       }
@@ -124,20 +126,24 @@ export async function GET(req: NextRequest) {
       if (offer.storeCity) {
         citiesSet.add(offer.storeCity);
       }
+      return {
+        ...offer,
+        partName: cleanMasterPartTitle(offer.partName),
+      };
     });
 
-    const avgPrice = results.length > 0 ? totalPrice / results.length : null;
+    const avgPrice = sanitizedResults.length > 0 ? totalPrice / sanitizedResults.length : null;
 
     const response = {
       vehicle: vehicleInfo,
       query: q,
-      offers: results,
+      offers: sanitizedResults,
       meta: {
-        totalCount: results.length,
+        totalCount: sanitizedResults.length,
         minPrice,
         avgPrice,
         cities: Array.from(citiesSet),
-        matchedParts: new Set(results.map((r) => r.partId)).size,
+        matchedParts: new Set(sanitizedResults.map((r) => r.partId)).size,
       },
     };
 

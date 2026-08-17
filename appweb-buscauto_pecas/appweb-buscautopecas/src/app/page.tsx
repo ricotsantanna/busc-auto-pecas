@@ -187,7 +187,9 @@ export default function HomePage() {
 
     debounceRef.current = setTimeout(async () => {
       try {
-        const res = await fetch(`/api/parts/search?q=${encodeURIComponent(text)}`);
+        const brandObj = brands.find((b) => b.id === selectedBrand);
+        const brandParam = brandObj ? `&brandName=${encodeURIComponent(brandObj.name)}` : "";
+        const res = await fetch(`/api/parts/search?q=${encodeURIComponent(text)}${brandParam}`);
         const data = await res.json();
         setPartSuggestions(data.parts || []);
       } catch (e) {
