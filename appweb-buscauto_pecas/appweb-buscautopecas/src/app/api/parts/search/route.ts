@@ -11,6 +11,12 @@ const CAR_BRANDS = [
   "toyota", "honda", "hyundai", "nissan", "jeep", "bmw", "audi", "mercedes", "volvo", "scania", "mitsubishi", "chery", "byd"
 ];
 
+// Peças de carros que possuem variações de lado/posição
+const SIDE_SENSITIVE_KEYWORDS = [
+  "farol", "lanterna", "retrovisor", "paralama", "porta", "amortecedor", "pastilha", "disco",
+  "espelho", "macaneta", "maçaneta", "bojo", "pisca", "seta", "vidro", "suporte", "palheta"
+];
+
 export async function GET(req: NextRequest) {
   const q = (req.nextUrl.searchParams.get("q") ?? "").trim();
   const segment = (req.nextUrl.searchParams.get("segment") ?? "CARRO").toUpperCase();
@@ -43,8 +49,8 @@ export async function GET(req: NextRequest) {
       const raw = m.name;
       const lowerRaw = raw.toLowerCase();
 
-      // 1. Filtrar peças de moto se o segmento selecionado for CARRO
-      if (segment === "CARRO") {
+      // 1. Filtrar peças de moto se o segmento selecionado for CARRO ou ELETRICO
+      if (segment === "CARRO" || segment === "ELETRICO") {
         if (MOTORCYCLE_BRANDS_MODELS.some((m) => lowerRaw.includes(m))) {
           continue;
         }
@@ -58,14 +64,33 @@ export async function GET(req: NextRequest) {
         }
       }
 
-      // 3. Saneamento do nome (remove marcas, modelos e lados do texto)
+      // 3. Saneamento do nome
       const clean = cleanMasterPartTitle(raw);
-      if (clean && clean.length >= 3 && !cleanedNames.includes(clean)) {
-        cleanedNames.push(clean);
+      if (!clean || clean.length < 3) continue;
+
+      // 4. Lógica de Lado/Posição diferenciada por segmento
+      const lowerClean = clean.toLowerCase();
+      const isCarSegment = segment === "CARRO" || segment === "ELETRICO";
+      const isSideSensitive = SIDE_SENSITIVE_KEYWORDS.some((kw) => lowerClean.includes(kw));
+
+      if (isCarSegment && isSideSensitive) {
+        // Se for carro e for uma peça com lado (ex: Farol, Lanterna, Retrovisor), oferece as opções de Lado
+        const rightVariant = `${clean} - Lado Direito (Passageiro)`;
+        const leftVariant = `${clean} - Lado Esquerdo (Motorista)`;
+        const pairVariant = `${clean} (Par / Ambos os Lados)`;
+
+        if (!cleanedNames.includes(rightVariant)) cleanedNames.push(rightVariant);
+        if (!cleanedNames.includes(leftVariant)) cleanedNames.push(leftVariant);
+        if (!cleanedNames.includes(pairVariant)) cleanedNames.push(pairVariant);
+      } else {
+        // Se for Moto ou peça sem lado (ex: Farol de moto, Filtro de óleo, Vela), devolve título único limpo
+        if (!cleanedNames.includes(clean)) {
+          cleanedNames.push(clean);
+        }
       }
     }
 
-    return NextResponse.json({ parts: cleanedNames.slice(0, 10) });
+    return NextResponse.json({ parts: cleanedNames.slice(0, 12) });
   } catch (error) {
     console.error("Public part search error:", error);
     return NextResponse.json({ parts: [] });

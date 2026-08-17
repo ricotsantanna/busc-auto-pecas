@@ -41,6 +41,8 @@ export default function LojistaEstoque() {
   const [price, setPrice] = useState("");
   const [quantity, setQuantity] = useState("1");
   const [condition, setCondition] = useState("NOVO");
+  const [sidePosition, setSidePosition] = useState("NENHUM");
+  const [observation, setObservation] = useState("");
   const [saving, setSaving] = useState(false);
 
   // Modal State (Fase 3 - Step 2)
@@ -529,6 +531,34 @@ export default function LojistaEstoque() {
                       <option value="NOVO">Novo</option>
                       <option value="USADO">Usado</option>
                     </select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Lado / Posição (para Carros)</label>
+                    <select 
+                      value={sidePosition}
+                      onChange={e => setSidePosition(e.target.value)}
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 bg-white"
+                    >
+                      <option value="NENHUM">Indiferente / Central</option>
+                      <option value="DIREITO">Lado Direito (Passageiro)</option>
+                      <option value="ESQUERDO">Lado Esquerdo (Motorista)</option>
+                      <option value="PAR">Par (Direito + Esquerdo)</option>
+                      <option value="DIANTEIRO">Dianteiro</option>
+                      <option value="TRASEIRO">Traseiro</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Observações da Peça (opcional)</label>
+                    <input 
+                      type="text" 
+                      value={observation}
+                      onChange={e => setObservation(e.target.value)}
+                      placeholder="ex: Com bojo original Arteb"
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500" 
+                    />
                   </div>
                 </div>
 

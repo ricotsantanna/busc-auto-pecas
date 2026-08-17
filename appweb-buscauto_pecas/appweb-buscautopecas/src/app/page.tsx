@@ -84,6 +84,7 @@ export default function HomePage() {
   const [partSuggestions, setPartSuggestions] = useState<string[]>([]);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [searchingParts, setSearchingParts] = useState(false);
+  const [selectedSide, setSelectedSide] = useState<"" | "DIREITO" | "ESQUERDO" | "PAR">("");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const debounceRef = useRef<NodeJS.Timeout>();
 
@@ -225,6 +226,7 @@ export default function HomePage() {
     if (selectedModel) params.set("model", selectedModel);
     if (selectedYear) params.set("year", selectedYear);
     if (selectedVersion) params.set("version", selectedVersion);
+    if (selectedSide) params.set("side", selectedSide);
     if (partQuery.trim()) params.set("q", partQuery.trim());
     router.push(`/search?${params.toString()}`);
   }
@@ -613,6 +615,66 @@ export default function HomePage() {
                 </button>
               </div>
             </div>
+
+            {/* Lado / Posição (Exclusivo para Carros & Elétricos) */}
+            {(segment === "CARRO" || segment === "ELETRICO") && (
+              <div className="mt-4 p-3.5 bg-slate-50 border border-slate-200 rounded-xl">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
+                  <span className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+                    Lado / Posição da Peça (Opcional):
+                  </span>
+                  <span className="text-[11px] text-slate-400">
+                    Selecione o lado exato para evitar erros de compatibilidade
+                  </span>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedSide("")}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition ${
+                      selectedSide === ""
+                        ? "bg-brand-primary text-white border-brand-primary shadow-sm"
+                        : "bg-white text-slate-600 border-slate-200 hover:bg-slate-100"
+                    }`}
+                  >
+                    Ambos / Qualquer Lado
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedSide("DIREITO")}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition ${
+                      selectedSide === "DIREITO"
+                        ? "bg-brand-primary text-white border-brand-primary shadow-sm"
+                        : "bg-white text-slate-600 border-slate-200 hover:bg-slate-100"
+                    }`}
+                  >
+                    👉 Lado Direito (Passageiro)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedSide("ESQUERDO")}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition ${
+                      selectedSide === "ESQUERDO"
+                        ? "bg-brand-primary text-white border-brand-primary shadow-sm"
+                        : "bg-white text-slate-600 border-slate-200 hover:bg-slate-100"
+                    }`}
+                  >
+                    👈 Lado Esquerdo (Motorista)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedSide("PAR")}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition ${
+                      selectedSide === "PAR"
+                        ? "bg-brand-primary text-white border-brand-primary shadow-sm"
+                        : "bg-white text-slate-600 border-slate-200 hover:bg-slate-100"
+                    }`}
+                  >
+                    ✌️ Par (Ambos os Lados)
+                  </button>
+                </div>
+              </div>
+            )}
 
             {/* dicas rápidas */}
             <div className="mt-6 flex flex-wrap gap-2">
