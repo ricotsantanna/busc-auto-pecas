@@ -1,7 +1,164 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Plus, Search, Filter, Loader2, PackageX, Sparkles } from "lucide-react";
+import { Plus, Search, Filter, Loader2, PackageX, Sparkles, Car, ChevronDown, CheckCircle2, X } from "lucide-react";
+
+export function groupCompatibilities(rawItems: string[]): string[] {
+  if (!rawItems || rawItems.length === 0) return [];
+
+  const modelYearsMap = new Map<string, Set<number>>();
+  const unparsedItems: string[] = [];
+
+  for (const item of rawItems) {
+    if (typeof item !== "string" || !item.trim()) continue;
+    const cleanItem = item.trim();
+
+    // Tenta extrair ano de 4 dígitos (19xx ou 20xx) do final ou entre parênteses
+    const yearMatch = cleanItem.match(/\b(19\d{2}|20\d{2})\b/);
+    if (yearMatch) {
+      const year = parseInt(yearMatch[1], 10);
+      // Remove o ano e parênteses do modelo para agrupar
+      let modelKey = cleanItem
+        .replace(/\b(19\d{2}|20\d{2})\b/g, "")
+        .replace(/\(\s*\)/g, "")
+        .replace(/-\s*$/g, "")
+        .replace(/\s+/g, " ")
+        .trim();
+
+      if (modelKey.length > 0) {
+        if (!modelYearsMap.has(modelKey)) {
+          modelYearsMap.set(modelKey, new Set<number>());
+        }
+        modelYearsMap.get(modelKey)!.add(year);
+        continue;
+      }
+    }
+
+    if (!unparsedItems.includes(cleanItem)) {
+      unparsedItems.push(cleanItem);
+    }
+  }
+
+  const result: string[] = [];
+
+  modelYearsMap.forEach((yearSet, model) => {
+    const years = Array.from(yearSet).sort((a, b) => a - b);
+
+    const ranges: string[] = [];
+    let startYear = years[0];
+    let prevYear = years[0];
+
+    for (let i = 1; i < years.length; i++) {
+      if (years[i] === prevYear + 1) {
+        prevYear = years[i];
+      } else {
+        if (startYear === prevYear) {
+          ranges.push(`${startYear}`);
+        } else {
+          ranges.push(`${startYear}–${prevYear}`);
+        }
+        startYear = years[i];
+        prevYear = years[i];
+      }
+    }
+
+    if (startYear === prevYear) {
+      ranges.push(`${startYear}`);
+    } else {
+      ranges.push(`${startYear}–${prevYear}`);
+    }
+
+    result.push(`${model} (${ranges.join(", ")})`);
+  });
+
+  return [...result, ...unparsedItems];
+}
+
+function CompatibilityCell({ compatibilities }: { compatibilities: string[] }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const popoverRef = useRef<HTMLDivElement>(null);
+
+  const grouped = groupCompatibilities(compatibilities);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (popoverRef.current && !popoverRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    }
+    if (isOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [isOpen]);
+
+  if (!grouped || grouped.length === 0) {
+    return <span className="text-xs text-slate-400 italic">Sem compatibilidade vinculada</span>;
+  }
+
+  const visibleItems = grouped.slice(0, 2);
+  const hiddenCount = grouped.length - 2;
+
+  return (
+    <div className="relative inline-block text-left" ref={popoverRef}>
+      <div className="flex flex-wrap items-center gap-1.5">
+        {visibleItems.map((item, idx) => (
+          <span
+            key={idx}
+            className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-slate-100 text-slate-700 border border-slate-200 whitespace-nowrap"
+          >
+            <Car className="w-3 h-3 text-slate-400 mr-1 shrink-0" />
+            {item}
+          </span>
+        ))}
+
+        {hiddenCount > 0 && (
+          <button
+            type="button"
+            onClick={() => setIsOpen(!isOpen)}
+            className="inline-flex items-center px-2 py-1 rounded-md text-xs font-semibold bg-orange-50 text-orange-700 hover:bg-orange-100 border border-orange-200 transition-colors cursor-pointer gap-1"
+          >
+            <span>+{hiddenCount} veículo{hiddenCount > 1 ? "s" : ""}</span>
+            <ChevronDown className={`w-3 h-3 transition-transform ${isOpen ? "rotate-180" : ""}`} />
+          </button>
+        )}
+      </div>
+
+      {/* Popover elegante */}
+      {isOpen && (
+        <div className="absolute left-0 top-full mt-2 w-72 bg-white rounded-xl shadow-xl border border-slate-200 p-3 z-30 animate-in fade-in zoom-in-95 duration-150">
+          <div className="flex items-center justify-between border-b border-slate-100 pb-2 mb-2">
+            <span className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+              <Car className="w-3.5 h-3.5 text-orange-500" />
+              Aplicações Compatíveis ({grouped.length})
+            </span>
+            <button
+              onClick={() => setIsOpen(false)}
+              className="text-slate-400 hover:text-slate-600 rounded-lg p-0.5"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+
+          <div className="max-h-60 overflow-y-auto pr-1 space-y-1.5">
+            {grouped.map((item, idx) => (
+              <div
+                key={idx}
+                className="flex items-center gap-2 p-2 rounded-lg bg-slate-50 border border-slate-100 text-xs font-medium text-slate-700 hover:bg-orange-50/50 hover:border-orange-200 transition-colors"
+              >
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                <span className="truncate">{item}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 
 type Part = {
   id: string;
@@ -494,17 +651,7 @@ export default function LojistaEstoque() {
                   <td className="px-6 py-4 font-medium text-slate-900">{offer.part.name}</td>
                   <td className="px-6 py-4">{offer.part.manufacturer} <span className="text-xs text-slate-400 block">{offer.part.partNumber}</span></td>
                   <td className="px-6 py-4 max-w-xs">
-                    {offer.compatibilities && offer.compatibilities.length > 0 ? (
-                      <div className="flex flex-wrap gap-1">
-                        {offer.compatibilities.map((comp, idx) => (
-                          <span key={idx} className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-blue-50 text-blue-700 border border-blue-200">
-                            {comp}
-                          </span>
-                        ))}
-                      </div>
-                    ) : (
-                      <span className="text-xs text-slate-400 italic">Sem compatibilidade vinculada</span>
-                    )}
+                    <CompatibilityCell compatibilities={offer.compatibilities || []} />
                   </td>
                   <td className="px-6 py-4 font-medium text-green-700">R$ {Number(offer.price).toFixed(2)}</td>
                   <td className="px-6 py-4">
