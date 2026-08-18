@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Plus, Search, Filter, Loader2, PackageX, Sparkles, Car, ChevronDown, CheckCircle2, X, Edit3, Trash2, PauseCircle, PlayCircle, AlertTriangle, Download, UploadCloud, FileSpreadsheet, Inbox, AlertCircle } from "lucide-react";
+import { Plus, Search, Filter, Loader2, PackageX, Sparkles, Car, ChevronDown, CheckCircle2, X, Edit3, Trash2, PauseCircle, PlayCircle, AlertTriangle, Download, UploadCloud, FileSpreadsheet, Inbox, AlertCircle, Eye } from "lucide-react";
 
 export function groupCompatibilities(rawItems: string[]): string[] {
   if (!rawItems || rawItems.length === 0) return [];
@@ -972,6 +972,18 @@ export default function LojistaEstoque() {
                       </span>
                     </td>
                     <td className="px-6 py-4 text-right space-x-2 whitespace-nowrap">
+                      {/* Botão Ver Anúncio */}
+                      <a
+                        href={`/search?q=${encodeURIComponent(offer.part.name)}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center px-2.5 py-1 text-xs font-semibold text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg transition-colors"
+                        title="Visualizar anúncio como o cliente final enxerga na busca"
+                      >
+                        <Eye className="w-3.5 h-3.5 mr-1" />
+                        Ver Anúncio
+                      </a>
+
                       {/* Botão Editar */}
                       <button
                         onClick={() => handleOpenEditModal(offer)}

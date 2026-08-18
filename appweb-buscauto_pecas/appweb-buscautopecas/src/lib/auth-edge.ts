@@ -91,3 +91,35 @@ export async function getSession(): Promise<AuthPayload | null> {
   return await decryptJWT(token);
 }
 
+// --- Admin Session Helpers ---
+export interface AdminAuthPayload {
+  email: string;
+  role: "ADMIN";
+}
+
+export async function encryptAdminJWT(payload: AdminAuthPayload) {
+  return await new SignJWT({ ...payload })
+    .setProtectedHeader({ alg: "HS256" })
+    .setIssuedAt()
+    .setExpirationTime("1d")
+    .sign(key);
+}
+
+export async function decryptAdminJWT(input: string): Promise<AdminAuthPayload | null> {
+  try {
+    const { payload } = await jwtVerify(input, key, {
+      algorithms: ["HS256"],
+    });
+    return payload as unknown as AdminAuthPayload;
+  } catch (error) {
+    return null;
+  }
+}
+
+export async function getAdminSession(): Promise<AdminAuthPayload | null> {
+  const cookieStore = await cookies();
+  const token = cookieStore.get("admin_auth_token")?.value;
+  if (!token) return null;
+  return await decryptAdminJWT(token);
+}
+

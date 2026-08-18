@@ -40,7 +40,19 @@ export default function LojistaDashboardLayout({ children }: { children: ReactNo
       <main className="flex-1 flex flex-col">
         {/* Header Superior */}
         <header className="h-16 bg-white border-b border-slate-200 flex items-center px-8 justify-between">
-          <h1 className="text-lg font-semibold text-slate-800">BuscAutoPeças</h1>
+          <div className="flex items-center gap-4">
+            <h1 className="text-lg font-semibold text-slate-800">BuscAutoPeças</h1>
+            <a
+              href="/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-orange-700 bg-orange-50 hover:bg-orange-100 border border-orange-200 rounded-lg transition-colors"
+              title="Abrir o site de busca pública em nova aba"
+            >
+              🌐 Ver Site / Loja Pública
+            </a>
+          </div>
+
           <div className="flex items-center gap-4">
             <div className="text-sm">
               <span className="text-slate-500">Plano Atual:</span>
