@@ -1,11 +1,12 @@
+// src/app/api/parts/search/route.ts — Autocomplete Contextualizado com Validação de Veículo e Segmento
 import { NextRequest, NextResponse } from "next/server";
 import { getDb, schema } from "@/db";
-import { like, or } from "drizzle-orm";
+import { like, or, eq, and } from "drizzle-orm";
 import { cleanMasterPartTitle, MOTORCYCLE_BRANDS_MODELS } from "@/lib/part-sanitizer";
 
 export const runtime = "edge";
 
-// Known car brands for cross-brand conflict filtering
+// Marcas de carros conhecidas para prevenção de contaminação cruzada de marca
 const CAR_BRANDS = [
   "fiat", "volkswagen", "vw", "chevrolet", "gm", "ford", "renault", "peugeot", "citroen", "citroën",
   "toyota", "honda", "hyundai", "nissan", "jeep", "bmw", "audi", "mercedes", "volvo", "scania", "mitsubishi", "chery", "byd"
@@ -42,6 +43,7 @@ const ESSENTIAL_MASTER_PARTS: Record<string, string[]> = {
   filt: ["Filtro de Óleo", "Filtro de Ar", "Filtro de Combustível", "Filtro de Ar Condicionado"],
   filtro: ["Filtro de Óleo", "Filtro de Ar", "Filtro de Combustível", "Filtro de Ar Condicionado"],
   vela: ["Vela de Ignição", "Jogo de Velas de Ignição", "Cabo de Vela"],
+  velas: ["Vela de Ignição", "Jogo de Velas de Ignição", "Cabo de Vela"],
   bat: ["Bateria 60Ah", "Bateria 70Ah", "Bateria 50Ah"],
   bater: ["Bateria 60Ah", "Bateria 70Ah"],
   bateria: ["Bateria 60Ah", "Bateria 70Ah"]
@@ -58,17 +60,17 @@ function getPriorityScore(partName: string, queryLower: string): number {
     return 10;
   }
   
-  // Se for exato igual à busca (ex: Farol) -> Score Máximo
+  // Se for exato igual à busca (ex: Farol, Vela de Ignição) -> Score Máximo
   if (nameLower === queryLower) {
     return 100;
   }
 
-  // Se a peça principal começa com a busca (ex: Farol Principal, Farol de Milha) -> Score Alto
+  // Se a peça principal começa com a busca (ex: Farol Principal, Vela de Ignição) -> Score Alto
   if (nameLower.startsWith(queryLower)) {
     return 90;
   }
 
-  // Se a peça começa com substantivo mestre limpo (ex: Farol...) -> Score Médio
+  // Se a peça começa com substantivo mestre limpo -> Score Médio
   return 50;
 }
 
@@ -77,6 +79,8 @@ export async function GET(req: NextRequest) {
   const segment = (req.nextUrl.searchParams.get("segment") ?? "CARRO").toUpperCase();
   const brandName = (req.nextUrl.searchParams.get("brandName") ?? "").trim().toLowerCase();
   const modelName = (req.nextUrl.searchParams.get("modelName") ?? "").trim().toLowerCase();
+  const year = (req.nextUrl.searchParams.get("year") ?? "").trim();
+  const versionId = (req.nextUrl.searchParams.get("versionId") ?? "").trim();
 
   if (q.length < 2) {
     return NextResponse.json({ parts: [] });
@@ -84,21 +88,55 @@ export async function GET(req: NextRequest) {
 
   try {
     const db = await getDb();
-    const matches = await db
-      .select({
-        name: schema.masterParts.name,
-      })
-      .from(schema.masterParts)
-      .where(
-        or(
-          like(schema.masterParts.name, `%${q}%`),
-          like(schema.masterParts.name, `%${q.toLowerCase()}%`),
-          like(schema.masterParts.name, `%${q.toUpperCase()}%`)
-        )
-      )
-      .limit(60);
+    let rawCandidates: string[] = [];
 
-    const rawCandidates: string[] = matches.map((m) => m.name);
+    // Se temos versionId do veículo selecionado, busca compatibilidade direta primeiro
+    if (versionId) {
+      try {
+        const compatMatches = await db
+          .select({ name: schema.masterParts.name })
+          .from(schema.masterParts)
+          .innerJoin(
+            schema.partCompatibility,
+            eq(schema.masterParts.id, schema.partCompatibility.partId)
+          )
+          .where(
+            and(
+              eq(schema.partCompatibility.versionId, versionId),
+              or(
+                like(schema.masterParts.name, `%${q}%`),
+                like(schema.masterParts.name, `%${q.toLowerCase()}%`),
+                like(schema.masterParts.name, `%${q.toUpperCase()}%`)
+              )
+            )
+          )
+          .limit(40);
+
+        rawCandidates = compatMatches.map((m) => m.name);
+      } catch (e) {
+        console.warn("Compat query fallback to masterParts:", e);
+      }
+    }
+
+    // Se a busca por compatibilidade não retornou dados suficientes, busca no catálogo mestre de peças
+    if (rawCandidates.length < 5) {
+      const matches = await db
+        .select({
+          name: schema.masterParts.name,
+        })
+        .from(schema.masterParts)
+        .where(
+          or(
+            like(schema.masterParts.name, `%${q}%`),
+            like(schema.masterParts.name, `%${q.toLowerCase()}%`),
+            like(schema.masterParts.name, `%${q.toUpperCase()}%`)
+          )
+        )
+        .limit(60);
+
+      const generalCandidates = matches.map((m) => m.name);
+      rawCandidates = Array.from(new Set([...rawCandidates, ...generalCandidates]));
+    }
 
     // Injeta peças mestre essenciais caso a busca bata com o dicionário chave
     const queryLower = q.toLowerCase();
@@ -116,22 +154,23 @@ export async function GET(req: NextRequest) {
     for (const raw of rawCandidates) {
       const lowerRaw = raw.toLowerCase();
 
-      // 1. Filtrar peças de moto se o segmento for CARRO ou ELETRICO
+      // 1. REJEITAR PEÇAS DE MOTO SE O SEGMENTO ATIVO FOR CARRO/ELÉTRICO
       if (isCarSegment) {
         if (MOTORCYCLE_BRANDS_MODELS.some((m) => lowerRaw.includes(m))) {
           continue;
         }
       }
 
-      // 2. Filtrar marcas de terceiros conflitantes se montadora foi selecionada
+      // 2. REJEITAR CONTAMINAÇÃO CRUZADA DE MARCAS DIFERENTES DA SELECIONADA
       if (brandName && brandName.length >= 3) {
+        // Se o usuário selecionou Hyundai, rejeita marcas como Honda, Toyota, Fiat, VW, Ford, etc.
         const conflictingBrands = CAR_BRANDS.filter((b) => b !== brandName && !brandName.includes(b));
         if (conflictingBrands.some((cb) => lowerRaw.includes(cb))) {
           continue;
         }
       }
 
-      // 3. Saneamento do nome
+      // 3. Saneamento e Higienização do Título
       const clean = cleanMasterPartTitle(raw);
       if (!clean || clean.length < 3) continue;
 

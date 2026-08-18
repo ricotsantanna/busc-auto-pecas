@@ -8,7 +8,7 @@ const BRAND_NOISE = [
   "CHEVROLET", "CHEVR", "GM", "VW", "VOLKSWAGEN", "FIAT", "FORD",
   "AUDI", "BMW", "TOYOTA", "HONDA", "HYUNDAI", "RENAULT", "NISSAN",
   "JEEP", "PEUGEOT", "CITROEN", "CITROËN", "MITSUBISHI", "CHERY", "BYD", "HAVAL",
-  "YAMAHA", "SUZUKI", "KAWASAKI", "DUCATI", "BMW MOTO", "TRIUMPH"
+  "YAMAHA", "SUZUKI", "KAWASAKI", "DUCATI", "BMW MOTO", "TRIUMPH", "SHINERAY", "HAOJUE"
 ];
 
 // Modelos de carros, utilitários, caminhões e motos para remoção do nome mestre
@@ -18,12 +18,13 @@ const MODEL_NOISE = [
   "TITAN150", "TITAN160", "TITAN125", "TITAN", "FAN125", "FAN150", "FAN160", "FAN", "BROS150", "BROS160", "BROS", "NXR",
   "BIZ100", "BIZ125", "BIZ", "TWISTER", "CBX250", "CBX", "CB300R", "CB300", "CB250F", "CB500", "XRE300", "XRE190", "XRE",
   "FALCON", "NX400", "CG125", "CG150", "CG160", "CG", "PCX", "BURGMAN", "POP100", "POP110", "SCOOTER",
+  "CBR1000RR", "CBR1000", "CBR600RR", "CBR600", "CBR250", "CBR", "HORNET", "XJ6", "NINJA300", "NINJA250", "NINJA", "Z750", "Z800", "Z900",
   // Carros e Utilitários
   "FH12", "FH13", "FH440", "FH460", "FH500", "FH", "FM12", "FM", "D124", "P94", "R113", "T113",
   "C3", "C4", "C5", "AIRCROSS", "FIORINO", "PALIO", "UNO", "GOL", "CELTA", "CORSA", "CIVIC", "COROLLA", "FIT", "KA", "FIESTA", "FOCUS",
   "ECOSPORT", "SAVEIRO", "STRADA", "HILUX", "AMAROK", "RANGER", "S10", "SPIN", "ONIX", "PRISMA", "COBALT", "CRUZE", "TRACKER", "EQUINOX",
   "MONTANA", "ASTRA", "VECTRA", "ZAFIRA", "MERIVA", "KADETT", "MONZA", "CHEVETTE", "KWID", "SANDERO", "DUSTER", "LOGAN", "ARGO", "MOBI",
-  "TORO", "CRONOS", "RENEGADE", "COMPASS", "CRETA", "HB20", "KICKS", "VERSA", "MARCH", "208", "308", "2008", "HRV", "WRV", "WR-V",
+  "TORO", "CRONOS", "RENEGADE", "COMPASS", "CRETA", "HB20", "IX35", "TUCSON", "SANTA FE", "AZERA", "ELANTRA", "KICKS", "VERSA", "MARCH", "208", "308", "2008", "HRV", "WRV", "WR-V",
   "A3", "A4", "A5", "Q3", "Q5", "320I", "325I", "528I", "X1", "X3", "X5"
 ];
 
@@ -32,11 +33,12 @@ const SIDE_NOISE = [
   "LADO DIREITO", "LADO ESQUERDO", "L/D", "L/E", "L.D.", "L.E.", "LD", "LE", "LH", "RH"
 ];
 
-// Marcas de motos para filtragem cruzada de segmento
+// Marcas/Modelos de motos para filtragem cruzada de segmento (garante que motos não vazem para carros)
 export const MOTORCYCLE_BRANDS_MODELS = [
   "yamaha", "factor", "fazer", "ybr", "xtz", "xt660", "lander", "crosser", "nmax", "xmax",
-  "titan", "fan", "bros", "biz", "twister", "cbx", "cb300", "xre", "falcon", "cg125", "cg150", "cg160",
-  "burgman", "pop100", "suzuki moto", "kawasaki", "ducati", "triumph"
+  "titan", "fan", "bros", "biz", "twister", "cbx", "cb300", "xre", "falcon", "cg125", "cg150", "cg160", "cg",
+  "burgman", "pop100", "pop110", "suzuki moto", "kawasaki", "ducati", "triumph", "shineray", "haojue",
+  "cbr", "cbr1000", "cbr1000rr", "cbr600", "cbr600rr", "hornet", "xj6", "ninja", "z750", "z800", "z900", "scooter", "pcx", "lead", "neo"
 ];
 
 export function cleanMasterPartTitle(rawName: string): string {
@@ -76,6 +78,8 @@ export function cleanMasterPartTitle(rawName: string): string {
   clean = clean.replace(/\bFiltro Oleo\b/gi, "Filtro de Óleo");
   clean = clean.replace(/\bFiltro Ar\b/gi, "Filtro de Ar");
   clean = clean.replace(/\bFiltro Combustivel\b/gi, "Filtro de Combustível");
+  clean = clean.replace(/\bVela Ignicao\b/gi, "Vela de Ignição");
+  clean = clean.replace(/\bVelas Ignicao\b/gi, "Velas de Ignição");
 
   // Limpa hífens soltos, barras e múltiplos espaços
   clean = clean

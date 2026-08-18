@@ -190,12 +190,21 @@ export default function HomePage() {
       try {
         const brandObj = brands.find((b) => b.id === selectedBrand);
         const modelObj = models.find((m) => m.id === selectedModel);
+        const versionObj = versions.find((v) => v.id === selectedVersion);
 
         const params = new URLSearchParams();
         params.set("q", text);
         params.set("segment", segment);
         if (brandObj) params.set("brandName", brandObj.name);
         if (modelObj) params.set("modelName", modelObj.name);
+        if (selectedYear) params.set("year", selectedYear);
+        if (selectedVersion) {
+          params.set("versionId", selectedVersion);
+          if (versionObj) {
+            if (versionObj.engine) params.set("engine", versionObj.engine);
+            if (versionObj.versionName) params.set("versionName", versionObj.versionName);
+          }
+        }
 
         const res = await fetch(`/api/parts/search?${params.toString()}`);
         const data = await res.json();
