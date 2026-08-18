@@ -578,7 +578,7 @@ export default function HomePage() {
                       // Delay hiding so clicks on suggestions register
                       setTimeout(() => setIsDropdownOpen(false), 200);
                     }}
-                    disabled={!selectedVersion}
+                    disabled={!selectedBrand || !selectedModel || !selectedYear}
                   />
                   {searchingParts && (
                     <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-brand-primary animate-spin" />
