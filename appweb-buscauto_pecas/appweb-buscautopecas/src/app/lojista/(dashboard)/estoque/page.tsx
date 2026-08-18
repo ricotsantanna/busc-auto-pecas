@@ -438,7 +438,9 @@ export default function LojistaEstoque() {
                   >
                     <div>
                       <p className="font-medium text-slate-900">{part.name}</p>
-                      <p className="text-xs text-slate-500">Fab: {part.manufacturer} | Cód: {part.partNumber}</p>
+                      <p className="text-xs text-slate-500">
+                        Fab: {part.manufacturer || "Original / Genuíno"} {part.partNumber || part.manufacturerCode ? `| Cód: ${part.partNumber || part.manufacturerCode}` : ""}
+                      </p>
                     </div>
                     <Plus className="w-4 h-4 text-orange-600 opacity-50" />
                   </li>
