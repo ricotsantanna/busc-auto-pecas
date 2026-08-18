@@ -33,13 +33,13 @@ const updatedAt = () =>
     .default(sql`(unixepoch())`);
 
 // ============================================================
-// 1) BRANDS — Montadoras (Fiat, VW, Chevrolet...)
+// 1) BRANDS — Montadoras / Fabricantes (Fiat, VW, Chevrolet...)
 // ============================================================
 export const brands = sqliteTable(
   "brands",
   {
     id: uuid(),
-    name: text("name").notNull(),
+    name: text("name").notNull().unique(),
     slug: text("slug").notNull(),
     logoUrl: text("logo_url"),
     vehicleType: text("vehicle_type").notNull().default("carro"), // carro, moto, caminhao
@@ -96,7 +96,7 @@ export const carVersions = sqliteTable(
 );
 
 // ============================================================
-// 4) CATEGORIES — Categorias de peças
+// 4) CATEGORIES — Categorias de peças (suporta parent_id)
 // ============================================================
 export const categories = sqliteTable(
   "categories",
@@ -104,28 +104,102 @@ export const categories = sqliteTable(
     id: uuid(),
     name: text("name").notNull(),
     slug: text("slug").notNull(),
+    parentId: text("parent_id"), // Suporte a subcategorias
     icon: text("icon"), // nome do ícone Lucide
     createdAt: createdAt(),
   },
   (t) => ({
     slugUnique: uniqueIndex("categories_slug_unique").on(t.slug),
+    parentIdx: index("categories_parent_idx").on(t.parentId),
   })
 );
 
 // ============================================================
-// 5) MASTER_PARTS — Catálogo mestre controlado de peças
+// 5) PRODUCTS — Catálogo E-Commerce de Produtos (Modelo MercadoCar)
+// ============================================================
+export const products = sqliteTable(
+  "products",
+  {
+    id: uuid(),
+    sku: text("sku").notNull().unique(),
+    name: text("name").notNull(),
+    description: text("description"),
+    price: real("price").notNull(),
+    stockQuantity: integer("stock_quantity").notNull().default(0),
+    imageUrl: text("image_url"),
+    brandId: text("brand_id")
+      .notNull()
+      .references(() => brands.id, { onDelete: "cascade" }),
+    categoryId: text("category_id")
+      .notNull()
+      .references(() => categories.id, { onDelete: "cascade" }),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => ({
+    skuUnique: uniqueIndex("products_sku_unique").on(t.sku),
+    nameIdx: index("products_name_idx").on(t.name),
+    brandIdx: index("products_brand_idx").on(t.brandId),
+    categoryIdx: index("products_category_idx").on(t.categoryId),
+  })
+);
+
+// ============================================================
+// 6) VEHICLES — Cadastro Unificado de Veículos e Aplicação
+// ============================================================
+export const vehicles = sqliteTable(
+  "vehicles",
+  {
+    id: uuid(),
+    make: text("make").notNull(), // Marca / Montadora (ex: Ford)
+    model: text("model").notNull(), // Modelo (ex: Ecosport)
+    yearStart: integer("year_start").notNull(), // Ano inicial (ex: 2015)
+    yearEnd: integer("year_end"), // Ano final (ex: 2021 ou null para atual)
+    engine: text("engine"), // Motorização (ex: 1.5 16V Flex)
+    createdAt: createdAt(),
+  },
+  (t) => ({
+    makeModelIdx: index("vehicles_make_model_idx").on(t.make, t.model),
+    yearIdx: index("vehicles_year_idx").on(t.yearStart, t.yearEnd),
+  })
+);
+
+// ============================================================
+// 7) PRODUCT_FITMENT — Tabela de Compatibilidade (products <-> vehicles)
+// ============================================================
+export const productFitment = sqliteTable(
+  "product_fitment",
+  {
+    productId: text("product_id")
+      .notNull()
+      .references(() => products.id, { onDelete: "cascade" }),
+    vehicleId: text("vehicle_id")
+      .notNull()
+      .references(() => vehicles.id, { onDelete: "cascade" }),
+    notes: text("notes"), // Observações específicas de aplicação/montagem
+    createdAt: createdAt(),
+  },
+  (t) => ({
+    pk: primaryKey({ columns: [t.productId, t.vehicleId] }),
+    productIdx: index("fitment_product_idx").on(t.productId),
+    vehicleIdx: index("fitment_vehicle_idx").on(t.vehicleId),
+  })
+);
+
+// ============================================================
+// 8) MASTER_PARTS — Catálogo mestre legado/complementar
 // ============================================================
 export const masterParts = sqliteTable(
   "master_parts",
   {
     id: uuid(),
     name: text("name").notNull(),
-    manufacturer: text("manufacturer").notNull(), // ex: Bosch, Tecfil
+    manufacturer: text("manufacturer").notNull(),
     manufacturerCode: text("manufacturer_code").notNull(),
     categoryId: text("category_id")
       .notNull()
       .references(() => categories.id, { onDelete: "restrict" }),
-    position: text("position").default("N/A"), // ex: Dianteira, Traseira, Esquerda, Direita, N/A
+    position: text("position").default("N/A"),
     description: text("description"),
     imageUrl: text("image_url"),
     createdAt: createdAt(),
@@ -139,7 +213,7 @@ export const masterParts = sqliteTable(
 );
 
 // ============================================================
-// 6) PART_COMPATIBILITY — pivô master_parts <-> car_versions
+// 9) PART_COMPATIBILITY — pivô master_parts <-> car_versions
 // ============================================================
 export const partCompatibility = sqliteTable(
   "part_compatibility",
@@ -160,7 +234,7 @@ export const partCompatibility = sqliteTable(
 );
 
 // ============================================================
-// 7) COMPANIES — Empresa Mãe (Lojista)
+// 10) COMPANIES — Empresa Mãe (Lojista)
 // ============================================================
 export const companies = sqliteTable(
   "companies",
@@ -170,13 +244,13 @@ export const companies = sqliteTable(
     name: text("name").notNull(),
     email: text("email").notNull().unique(),
     passwordHash: text("password_hash").notNull(),
-    activePlan: text("active_plan").default("TRIAL"), // ex: TRIAL, BÁSICO, PROFISSIONAL
+    activePlan: text("active_plan").default("TRIAL"),
     createdAt: createdAt(),
   }
 );
 
 // ============================================================
-// 8) STORES — Lojas físicas parceiras (Filiais)
+// 11) STORES — Lojas físicas parceiras (Filiais)
 // ============================================================
 export const stores = sqliteTable(
   "stores",
@@ -188,8 +262,8 @@ export const stores = sqliteTable(
     name: text("name").notNull(),
     address: text("address").notNull(),
     city: text("city").notNull(),
-    state: text("state").notNull(), // UF (SP, RJ...)
-    whatsapp: text("whatsapp").notNull(), // formato E.164, ex.: 5511999999999
+    state: text("state").notNull(),
+    whatsapp: text("whatsapp").notNull(),
     logoUrl: text("logo_url"),
     rating: real("rating").default(0),
     createdAt: createdAt(),
@@ -201,9 +275,8 @@ export const stores = sqliteTable(
 );
 
 // ============================================================
-// 9) STORE_OFFERS — Oferta do lojista (preço + estoque + condição)
+// 12) STORE_OFFERS — Oferta do lojista (preço + estoque + condição)
 // ============================================================
-// Enum simulado via CHECK constraint (D1/SQLite não tem ENUM nativo).
 export const OFFER_CONDITIONS = ["NOVO", "USADO"] as const;
 export type OfferCondition = (typeof OFFER_CONDITIONS)[number];
 
@@ -227,8 +300,6 @@ export const storeOffers = sqliteTable(
     updatedAt: updatedAt(),
   },
   (t) => ({
-    // Regra de negócio: a loja não pode ter duas ofertas iguais
-    // (mesma peça + mesma condição).
     uniqueOffer: uniqueIndex("store_offers_unique").on(
       t.storeId,
       t.partId,
@@ -245,10 +316,11 @@ export const storeOffers = sqliteTable(
 );
 
 // ============================================================
-// RELATIONS (para uso com drizzle queries)
+// RELATIONS (Drizzle Queries)
 // ============================================================
 export const brandsRelations = relations(brands, ({ many }) => ({
   models: many(carModels),
+  products: many(products),
 }));
 
 export const carModelsRelations = relations(carModels, ({ one, many }) => ({
@@ -267,8 +339,42 @@ export const carVersionsRelations = relations(carVersions, ({ one, many }) => ({
   compatibilities: many(partCompatibility),
 }));
 
-export const categoriesRelations = relations(categories, ({ many }) => ({
+export const categoriesRelations = relations(categories, ({ one, many }) => ({
+  parent: one(categories, {
+    fields: [categories.parentId],
+    references: [categories.id],
+    relationName: "category_parent",
+  }),
+  children: many(categories, { relationName: "category_parent" }),
   parts: many(masterParts),
+  products: many(products),
+}));
+
+export const productsRelations = relations(products, ({ one, many }) => ({
+  brand: one(brands, {
+    fields: [products.brandId],
+    references: [brands.id],
+  }),
+  category: one(categories, {
+    fields: [products.categoryId],
+    references: [categories.id],
+  }),
+  fitments: many(productFitment),
+}));
+
+export const vehiclesRelations = relations(vehicles, ({ many }) => ({
+  fitments: many(productFitment),
+}));
+
+export const productFitmentRelations = relations(productFitment, ({ one }) => ({
+  product: one(products, {
+    fields: [productFitment.productId],
+    references: [products.id],
+  }),
+  vehicle: one(vehicles, {
+    fields: [productFitment.vehicleId],
+    references: [vehicles.id],
+  }),
 }));
 
 export const companiesRelations = relations(companies, ({ many }) => ({
@@ -318,7 +424,7 @@ export const storeOffersRelations = relations(storeOffers, ({ one }) => ({
 }));
 
 // ============================================================
-// TYPES exportados para uso em rotas / componentes
+// TYPES exportados
 // ============================================================
 export type Brand = typeof brands.$inferSelect;
 export type NewBrand = typeof brands.$inferInsert;
@@ -327,25 +433,32 @@ export type NewCarModel = typeof carModels.$inferInsert;
 export type CarVersion = typeof carVersions.$inferSelect;
 export type NewCarVersion = typeof carVersions.$inferInsert;
 export type Category = typeof categories.$inferSelect;
+export type NewCategory = typeof categories.$inferInsert;
+export type Product = typeof products.$inferSelect;
+export type NewProduct = typeof products.$inferInsert;
+export type Vehicle = typeof vehicles.$inferSelect;
+export type NewVehicle = typeof vehicles.$inferInsert;
+export type ProductFitment = typeof productFitment.$inferSelect;
+export type NewProductFitment = typeof productFitment.$inferInsert;
 export type MasterPart = typeof masterParts.$inferSelect;
 export type Store = typeof stores.$inferSelect;
 export type StoreOffer = typeof storeOffers.$inferSelect;
 export type NewStoreOffer = typeof storeOffers.$inferInsert;
 
 // ============================================================
-// 10) SYNC STATE - Estado do Robô (Cron Job) da Tabela FIPE
+// 13) SYNC STATE - Estado do Robô FIPE
 // ============================================================
 export const syncState = sqliteTable(
   "sync_state",
   {
-    key: text("key").primaryKey(), // e.g. "fipe-sync"
-    value: text("value"), // JSON representation of state
+    key: text("key").primaryKey(),
+    value: text("value"),
     updatedAt: updatedAt(),
   }
 );
 
 // ============================================================
-// 11) WORKSHOPS — Oficinas Mecânicas Cadastradas
+// 14) WORKSHOPS — Oficinas Mecânicas
 // ============================================================
 export const workshops = sqliteTable(
   "workshops",
@@ -359,7 +472,7 @@ export const workshops = sqliteTable(
     phone: text("phone"),
     whatsapp: text("whatsapp"),
     rating: real("rating").default(5.0),
-    specialties: text("specialties"), // e.g. "Freios, Suspensão, Injeção Eletrônica"
+    specialties: text("specialties"),
     lat: real("lat"),
     lng: real("lng"),
     isVerified: integer("is_verified", { mode: "boolean" }).default(true),

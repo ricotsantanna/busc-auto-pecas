@@ -1,157 +1,178 @@
+// src/app/api/search/route.ts — Rota de Busca Estruturada e Busca Livre FTS5 (Modelo E-Commerce)
 import { NextRequest, NextResponse } from "next/server";
-import { getDb, schema } from "@/db";
-import { eq, or, like, and, desc, asc } from "drizzle-orm";
-
-import { cleanMasterPartTitle } from "@/lib/part-sanitizer";
+import { getDb, schema, withDbOrMock } from "@/db";
+import { eq, and, gte, lte, or, sql, like } from "drizzle-orm";
 
 export const runtime = "edge";
 
+// GET /api/search?q=farol  (Busca Livre FTS5)
+// GET /api/search?make=Ford&model=Ecosport&year=2018&engine=1.5  (Busca Estruturada via Vehicles & Fitment)
 export async function GET(req: NextRequest) {
-  const sp = req.nextUrl.searchParams;
-  const q = sp.get("q")?.trim() ?? "";
-  const brandId = sp.get("brand") ?? undefined;
-  const modelId = sp.get("model") ?? undefined;
-  const yearStr = sp.get("year") ?? undefined;
-  const versionId = sp.get("version") ?? undefined;
+  const searchParams = req.nextUrl.searchParams;
+  const q = (searchParams.get("q") ?? "").trim();
+  const make = (searchParams.get("make") ?? "").trim();
+  const model = (searchParams.get("model") ?? "").trim();
+  const yearStr = (searchParams.get("year") ?? "").trim();
+  const engine = (searchParams.get("engine") ?? "").trim();
+  const year = yearStr ? parseInt(yearStr, 10) : NaN;
 
-  const db = await getDb();
-
-  try {
-    const conditions = [];
-
+  // Lógica de consulta ao banco D1
+  const handleD1Search = async (db: any) => {
+    // -------------------------------------------------------------
+    // 1. BUSCA LIVRE (FTS5 Full-Text Search)
+    // -------------------------------------------------------------
     if (q) {
-      const searchTerm = `%${q.toLowerCase()}%`;
-      conditions.push(
-        or(
-          like(schema.masterParts.name, searchTerm),
-          like(schema.masterParts.manufacturerCode, searchTerm)
+      try {
+        // Tenta executar consulta FTS5 indexada
+        const ftsQuery = sql`
+          SELECT p.id, p.sku, p.name, p.description, p.price, p.stock_quantity as stockQuantity,
+                 p.image_url as imageUrl, p.brand_id as brandId, p.category_id as categoryId,
+                 b.name as brandName, c.name as categoryName
+          FROM products_fts fts
+          JOIN products p ON fts.product_id = p.id
+          LEFT JOIN brands b ON p.brand_id = b.id
+          LEFT JOIN categories c ON p.category_id = c.id
+          WHERE products_fts MATCH ${q + "*"}
+          LIMIT 50
+        `;
+        const ftsResults: any = await db.all(ftsQuery);
+        if (ftsResults && ftsResults.results && ftsResults.results.length > 0) {
+          return ftsResults.results;
+        }
+      } catch (e) {
+        console.warn("FTS5 query fallback to LIKE:", e);
+      }
+
+      // Fallback robusto via LIKE em produtos + marcas + categorias
+      const likeResults = await db
+        .select({
+          product: schema.products,
+          brandName: schema.brands.name,
+          categoryName: schema.categories.name,
+        })
+        .from(schema.products)
+        .leftJoin(schema.brands, eq(schema.products.brandId, schema.brands.id))
+        .leftJoin(schema.categories, eq(schema.products.categoryId, schema.categories.id))
+        .where(
+          or(
+            like(schema.products.name, `%${q}%`),
+            like(schema.products.sku, `%${q}%`),
+            like(schema.products.description, `%${q}%`),
+            like(schema.brands.name, `%${q}%`)
+          )
+        )
+        .limit(50);
+
+      return likeResults.map((r: any) => ({
+        ...r.product,
+        brandName: r.brandName,
+        categoryName: r.categoryName,
+      }));
+    }
+
+    // -------------------------------------------------------------
+    // 2. BUSCA ESTRUTURADA (Cruzamento vehicles <-> product_fitment <-> products)
+    // -------------------------------------------------------------
+    const vehicleConditions = [];
+    if (make) vehicleConditions.push(like(schema.vehicles.make, `%${make}%`));
+    if (model) vehicleConditions.push(like(schema.vehicles.model, `%${model}%`));
+    if (engine) vehicleConditions.push(like(schema.vehicles.engine, `%${engine}%`));
+    if (!isNaN(year)) {
+      vehicleConditions.push(
+        and(
+          lte(schema.vehicles.yearStart, year),
+          or(
+            gte(schema.vehicles.yearEnd, year),
+            sql`${schema.vehicles.yearEnd} IS NULL`
+          )
         )
       );
     }
 
-    const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
-
-    let baseQuery = db
+    // Consulta com cruzamento relacional estrito
+    const fitmentQuery = db
       .select({
-        id: schema.storeOffers.id,
-        partId: schema.masterParts.id,
-        partName: schema.masterParts.name,
-        partCode: schema.masterParts.manufacturerCode,
+        product: schema.products,
+        brandName: schema.brands.name,
         categoryName: schema.categories.name,
-        storeId: schema.stores.id,
-        storeName: schema.stores.name,
-        storeCity: schema.stores.city,
-        storeState: schema.stores.state,
-        storeWhatsapp: schema.stores.whatsapp,
-        storeRating: schema.stores.rating,
-        price: schema.storeOffers.price,
-        condition: schema.storeOffers.condition,
-        inStock: schema.storeOffers.inStock,
-        notes: schema.storeOffers.notes,
-        createdAt: schema.storeOffers.createdAt,
+        fitmentNotes: schema.productFitment.notes,
+        vehicleMake: schema.vehicles.make,
+        vehicleModel: schema.vehicles.model,
+        vehicleEngine: schema.vehicles.engine,
+        yearStart: schema.vehicles.yearStart,
+        yearEnd: schema.vehicles.yearEnd,
       })
-      .from(schema.storeOffers)
-      .innerJoin(schema.masterParts, eq(schema.storeOffers.partId, schema.masterParts.id))
-      .innerJoin(schema.stores, eq(schema.storeOffers.storeId, schema.stores.id))
-      .leftJoin(schema.categories, eq(schema.masterParts.categoryId, schema.categories.id));
+      .from(schema.products)
+      .innerJoin(
+        schema.productFitment,
+        eq(schema.products.id, schema.productFitment.productId)
+      )
+      .innerJoin(
+        schema.vehicles,
+        eq(schema.productFitment.vehicleId, schema.vehicles.id)
+      )
+      .leftJoin(schema.brands, eq(schema.products.brandId, schema.brands.id))
+      .leftJoin(schema.categories, eq(schema.products.categoryId, schema.categories.id));
 
-    // Vehicle Filtering
-    if (versionId) {
-      baseQuery = baseQuery.innerJoin(
-        schema.partCompatibility,
-        and(
-          eq(schema.masterParts.id, schema.partCompatibility.partId),
-          eq(schema.partCompatibility.versionId, versionId)
-        )
-      ) as any;
-    } else if (yearStr && modelId) {
-      const yearNum = parseInt(yearStr, 10);
-      baseQuery = baseQuery
-        .innerJoin(schema.partCompatibility, eq(schema.masterParts.id, schema.partCompatibility.partId))
-        .innerJoin(schema.carVersions, eq(schema.partCompatibility.versionId, schema.carVersions.id))
-        .where(
-          and(
-            eq(schema.carVersions.modelId, modelId),
-            eq(schema.carVersions.year, yearNum)
-          )
-        ) as any;
+    if (vehicleConditions.length > 0) {
+      fitmentQuery.where(and(...vehicleConditions));
     }
 
-    const results = await baseQuery
-      .where(whereClause)
-      .orderBy(asc(schema.storeOffers.price));
+    const fitmentResults = await fitmentQuery.limit(50);
 
-    // Resolve readable vehicle info
-    let vehicleInfo: { brand?: string; model?: string; year?: string; version?: string } | null = null;
-    
-    if (brandId || modelId || yearStr || versionId) {
-      let bName = brandId;
-      let mName = modelId;
-      let vName = versionId;
-
-      if (brandId) {
-        const b = await db.select({ name: schema.brands.name }).from(schema.brands).where(eq(schema.brands.id, brandId)).limit(1);
-        if (b[0]) bName = b[0].name;
-      }
-      if (modelId) {
-        const m = await db.select({ name: schema.carModels.name }).from(schema.carModels).where(eq(schema.carModels.id, modelId)).limit(1);
-        if (m[0]) mName = m[0].name;
-      }
-      if (versionId) {
-        const v = await db.select({ name: schema.carVersions.versionName, year: schema.carVersions.year }).from(schema.carVersions).where(eq(schema.carVersions.id, versionId)).limit(1);
-        if (v[0]) {
-          vName = v[0].name;
-          if (!yearStr) yearStr = String(v[0].year);
-        }
-      }
-
-      vehicleInfo = {
-        brand: bName || undefined,
-        model: mName || undefined,
-        year: yearStr || undefined,
-        version: vName || undefined,
-      };
-    }
-
-    // Calculate metadata
-    let minPrice = null;
-    let totalPrice = 0;
-    const citiesSet = new Set<string>();
-
-    const sanitizedResults = results.map((offer) => {
-      if (minPrice === null || offer.price < minPrice) {
-        minPrice = offer.price;
-      }
-      totalPrice += offer.price;
-      if (offer.storeCity) {
-        citiesSet.add(offer.storeCity);
-      }
-      return {
-        ...offer,
-        partName: cleanMasterPartTitle(offer.partName),
-      };
-    });
-
-    const avgPrice = sanitizedResults.length > 0 ? totalPrice / sanitizedResults.length : null;
-
-    const response = {
-      vehicle: vehicleInfo,
-      query: q,
-      offers: sanitizedResults,
-      meta: {
-        totalCount: sanitizedResults.length,
-        minPrice,
-        avgPrice,
-        cities: Array.from(citiesSet),
-        matchedParts: new Set(sanitizedResults.map((r) => r.partId)).size,
+    return fitmentResults.map((r: any) => ({
+      ...r.product,
+      brandName: r.brandName,
+      categoryName: r.categoryName,
+      fitmentNotes: r.fitmentNotes,
+      compatibleVehicle: {
+        make: r.vehicleMake,
+        model: r.vehicleModel,
+        engine: r.vehicleEngine,
+        yearStart: r.yearStart,
+        yearEnd: r.yearEnd,
       },
-    };
+    }));
+  };
 
-    return NextResponse.json(response, {
-      headers: { "Cache-Control": "public, max-age=30, s-maxage=60" },
+  // Handler para Mock Local (em desenvolvimento sem D1 conectado)
+  const handleMockFallback = () => {
+    return [
+      {
+        id: "prod-mock-001",
+        sku: "BOS-0986-PAST",
+        name: "Pastilha de Freio Dianteira Cerâmica",
+        description: "Jogo de pastilhas de alta eficiência para frenagem silenciosa",
+        price: 189.9,
+        stockQuantity: 15,
+        imageUrl: "https://images.unsplash.com/photo-1580273916550-e323be2ae537?auto=format&fit=crop&w=400&q=80",
+        brandName: make || "Bosch",
+        categoryName: "Freios",
+        fitmentNotes: "Compatível com discos ventilados de 280mm",
+        compatibleVehicle: {
+          make: make || "Ford",
+          model: model || "Ecosport",
+          engine: engine || "1.5 16V Flex",
+          yearStart: 2017,
+          yearEnd: 2021,
+        },
+      },
+    ];
+  };
+
+  try {
+    const productsList = await withDbOrMock(handleD1Search, handleMockFallback);
+    return NextResponse.json({
+      success: true,
+      query: { q, make, model, year: isNaN(year) ? null : year, engine },
+      count: productsList.length,
+      products: productsList,
     });
   } catch (error: any) {
     console.error("Search API Error:", error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json(
+      { success: false, error: error.message || "Erro interno na busca" },
+      { status: 500 }
+    );
   }
 }
