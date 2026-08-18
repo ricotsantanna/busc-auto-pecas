@@ -213,6 +213,33 @@ export const masterParts = sqliteTable(
 );
 
 // ============================================================
+// 8B) MASTER_PARTS_INBOX — Fila de Triagem de Peças Inéditas enviado por Lojistas
+// ============================================================
+export const masterPartsInbox = sqliteTable(
+  "master_parts_inbox",
+  {
+    id: uuid(),
+    storeId: text("store_id")
+      .notNull()
+      .references(() => stores.id, { onDelete: "cascade" }),
+    rawPartName: text("raw_part_name").notNull(),
+    cleanPartName: text("clean_part_name").notNull(),
+    manufacturer: text("manufacturer"),
+    manufacturerCode: text("manufacturer_code"),
+    make: text("make"),
+    model: text("model"),
+    years: text("years"),
+    status: text("status").notNull().default("PENDING_REVIEW"),
+    suggestedMasterPartId: text("suggested_master_part_id"),
+    createdAt: createdAt(),
+  },
+  (t) => ({
+    storeIdx: index("master_parts_inbox_store_idx").on(t.storeId),
+    statusIdx: index("master_parts_inbox_status_idx").on(t.status),
+  })
+);
+
+// ============================================================
 // 9) PART_COMPATIBILITY — pivô master_parts <-> car_versions
 // ============================================================
 export const partCompatibility = sqliteTable(
