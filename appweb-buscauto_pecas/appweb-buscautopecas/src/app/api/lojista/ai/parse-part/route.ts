@@ -1,10 +1,14 @@
-// src/app/api/lojista/ai/parse-part/route.ts — AI Parser Canônico com Separação Estrita de Campos
+// src/app/api/lojista/ai/parse-part/route.ts — AI Parser Canônico com Queries SQL Limpas no D1
 import { NextRequest, NextResponse } from "next/server";
 import { getDb, schema } from "@/db";
 import { getSession } from "@/lib/auth-edge";
-import { eq, like, or, and } from "drizzle-orm";
+import { eq, like, and } from "drizzle-orm";
 
 export const runtime = "edge";
+
+function sanitizeLike(term: string): string {
+  return term.replace(/[%_\\\[\]]/g, "").trim();
+}
 
 // Dicionário Canônico de Nomes de Peças Limpos
 const PART_CANONICAL_RULES: { pattern: RegExp; cleanName: string; categoryId: string }[] = [
@@ -162,7 +166,6 @@ export async function POST(req: NextRequest) {
     const yearsStringArr = years.map(String);
 
     // 5. Higienização e Limpeza Estrita do Nome Canônico da Peça
-    // O nome NUNCA pode conter montadora, modelo, motor ou ano
     let cleanPartName = "";
 
     for (const rule of PART_CANONICAL_RULES) {
@@ -173,27 +176,20 @@ export async function POST(req: NextRequest) {
     }
 
     if (!cleanPartName) {
-      // Limpeza por Expressão Regular: remove montadoras, modelos, anos e posições
       let sanitize = rawText;
-
-      // Remove números de anos e intervalos
       sanitize = sanitize.replace(/\b(19\d{2}|20\d{2})\s*(?:a|-|até|\/)\s*(19\d{2}|20\d{2}|\d{2})\b/gi, "");
       sanitize = sanitize.replace(/\b(19\d{2}|20\d{2})\b/g, "");
 
-      // Remove montadoras conhecidas
       KNOWN_BRANDS.forEach((b) => b.search.forEach((s) => {
         sanitize = sanitize.replace(new RegExp(`\\b${s}\\b`, "gi"), "");
       }));
 
-      // Remove modelos conhecidos
       KNOWN_MODELS.forEach((m) => m.search.forEach((s) => {
         sanitize = sanitize.replace(new RegExp(`\\b${s}\\b`, "gi"), "");
       }));
 
-      // Remove termos de lado/posição e motorização
       sanitize = sanitize.replace(/\b(direit[oa]|esquerd[oa]|dianteir[oa]|traseir[oa]|lado|ld|le|par)\b/gi, "");
       sanitize = sanitize.replace(/\b(1\.0|1\.4|1\.5|1\.6|1\.8|2\.0|2\.4|3\.0|v6|turbo|16v|8v)\b/gi, "");
-
       sanitize = sanitize.replace(/\s+/g, " ").trim();
 
       if (sanitize) {
@@ -203,15 +199,16 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // 6. Resolução de brandId e modelId no Banco SQLite D1
+    // 6. Resolução de brandId e modelId no D1 via queries SQL diretas e simples
     let brandId = "";
     let modelId = "";
 
     if (brandName) {
+      const safeBrand = sanitizeLike(brandName);
       const bRows = await db
         .select({ id: schema.brands.id, name: schema.brands.name })
         .from(schema.brands)
-        .where(like(schema.brands.name, `%${brandName}%`))
+        .where(like(schema.brands.name, `%${safeBrand}%`))
         .limit(1);
       if (bRows[0]) {
         brandId = bRows[0].id;
@@ -219,7 +216,8 @@ export async function POST(req: NextRequest) {
     }
 
     if (modelName) {
-      const mConditions = [like(schema.carModels.name, `%${modelName}%`)];
+      const safeModel = sanitizeLike(modelName);
+      const mConditions = [like(schema.carModels.name, `%${safeModel}%`)];
       if (brandId) {
         mConditions.push(eq(schema.carModels.brandId, brandId));
       }
@@ -236,10 +234,11 @@ export async function POST(req: NextRequest) {
 
     // 7. Busca ou Criação da Peça Mestre Canônica em master_parts
     let masterPartId = "";
+    const safeCleanName = sanitizeLike(cleanPartName);
     const masterSearch = await db
       .select({ id: schema.masterParts.id, name: schema.masterParts.name, manufacturer: schema.masterParts.manufacturer })
       .from(schema.masterParts)
-      .where(like(schema.masterParts.name, `%${cleanPartName}%`))
+      .where(like(schema.masterParts.name, `%${safeCleanName}%`))
       .limit(1);
 
     if (masterSearch[0]) {

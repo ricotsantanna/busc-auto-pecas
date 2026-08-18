@@ -1,13 +1,13 @@
-// src/app/api/parts/search/route.ts — Autocomplete Contextual Blindado no D1
+// src/app/api/parts/search/route.ts — Autocomplete Contextual no D1 (Filtro em Memória sem Sobrepor SQLite)
 import { NextRequest, NextResponse } from "next/server";
 import { getDb, schema } from "@/db";
-import { like, notLike, or, eq, and } from "drizzle-orm";
+import { like, eq, and } from "drizzle-orm";
 import { cleanMasterPartTitle, MOTORCYCLE_BRANDS_MODELS } from "@/lib/part-sanitizer";
 
 export const runtime = "edge";
 
-// Marcas de veículos conhecidas para prevenção de contaminação cruzada de marca
-const ALL_CAR_BRANDS = [
+// Marcas de veículos conhecidas para prevenção de contaminação cruzada de marca em memória
+const CONFLICTING_BRANDS = [
   "iveco", "scania", "volvo", "fiat", "volkswagen", "vw", "chevrolet", "gm", "ford", "renault", "peugeot", "citroen", "citroën",
   "toyota", "honda", "hyundai", "nissan", "jeep", "bmw", "audi", "mercedes", "mitsubishi", "chery", "byd", "haval"
 ];
@@ -21,44 +21,37 @@ const AROMA_KEYWORDS = [
 const ESSENTIAL_MASTER_PARTS: Record<string, string[]> = {
   ar: ["Filtro de Ar", "Filtro de Ar Condicionado", "Compressor de Ar Condicionado", "Condensador de Ar Condicionado", "Evaporador de Ar"],
   filtro: ["Filtro de Ar", "Filtro de Óleo", "Filtro de Combustível", "Filtro de Ar Condicionado"],
-  far: ["Farol", "Farol Principal", "Farol de Milha", "Farol Auxiliar", "Farol de Neblina"],
-  faro: ["Farol", "Farol Principal", "Farol de Milha", "Farol Auxiliar", "Farol de Neblina"],
-  farol: ["Farol", "Farol Principal", "Farol de Milha", "Farol Auxiliar", "Farol de Neblina"],
-  lant: ["Lanterna Traseira", "Lanterna de Seta do Retrovisor", "Lanterna de Placa"],
-  lante: ["Lanterna Traseira", "Lanterna de Seta do Retrovisor"],
+  far: ["Farol Principal", "Farol de Milha / Auxiliar"],
+  farol: ["Farol Principal", "Farol de Milha / Auxiliar"],
+  lant: ["Lanterna Traseira", "Lanterna de Seta do Retrovisor"],
   lanterna: ["Lanterna Traseira", "Lanterna de Seta do Retrovisor"],
   brake: ["Brake Light (Luz de Freio)"],
   break: ["Brake Light (Luz de Freio)"],
-  luz: ["Brake Light (Luz de Freio)", "Luz de Placa"],
-  retro: ["Retrovisor", "Retrovisor Elétrico", "Retrovisor Manual"],
-  retrov: ["Retrovisor", "Retrovisor Elétrico", "Retrovisor Manual"],
-  retrovisor: ["Retrovisor", "Retrovisor Elétrico", "Retrovisor Manual"],
-  parac: ["Parachoque", "Parachoque Dianteiro", "Parachoque Traseiro"],
-  parach: ["Parachoque", "Parachoque Dianteiro", "Parachoque Traseiro"],
-  parachoque: ["Parachoque", "Parachoque Dianteiro", "Parachoque Traseiro"],
-  past: ["Pastilha de Freio", "Pastilha de Freio Dianteira", "Pastilha de Freio Traseira"],
-  pasti: ["Pastilha de Freio", "Pastilha de Freio Dianteira", "Pastilha de Freio Traseira"],
-  pastilha: ["Pastilha de Freio", "Pastilha de Freio Dianteira", "Pastilha de Freio Traseira"],
-  disc: ["Disco de Freio", "Disco de Freio Ventilado", "Disco de Freio Sólido"],
-  disco: ["Disco de Freio", "Disco de Freio Ventilado", "Disco de Freio Sólido"],
-  amort: ["Amortecedor", "Amortecedor Dianteiro", "Amortecedor Traseiro"],
-  amorte: ["Amortecedor", "Amortecedor Dianteiro", "Amortecedor Traseiro"],
-  amortecedor: ["Amortecedor", "Amortecedor Dianteiro", "Amortecedor Traseiro"],
-  filt: ["Filtro de Óleo", "Filtro de Ar", "Filtro de Combustível", "Filtro de Ar Condicionado"],
-  vela: ["Vela de Ignição", "Jogo de Velas de Ignição", "Cabo de Vela"],
-  velas: ["Vela de Ignição", "Jogo de Velas de Ignição", "Cabo de Vela"],
-  bat: ["Bateria 60Ah", "Bateria 70Ah", "Bateria 50Ah"],
-  bater: ["Bateria 60Ah", "Bateria 70Ah"],
-  bateria: ["Bateria 60Ah", "Bateria 70Ah"]
+  retro: ["Retrovisor"],
+  retrovisor: ["Retrovisor"],
+  parac: ["Parachoque Dianteiro", "Parachoque Traseiro"],
+  past: ["Pastilha de Freio"],
+  pastilha: ["Pastilha de Freio"],
+  disc: ["Disco de Freio"],
+  disco: ["Disco de Freio"],
+  amort: ["Amortecedor"],
+  amortecedor: ["Amortecedor"],
+  vela: ["Vela de Ignição"],
+  velas: ["Vela de Ignição"],
+  bat: ["Bateria Automotiva 60Ah"]
 };
 
 // Prefixas de acessórios secundários
-const SECONDARY_PREFIXES = ["acabamento", "alojamento", "moldura", "suporte", "capa", "friso", "presilha", "presilha do"];
+const SECONDARY_PREFIXES = ["acabamento", "alojamento", "moldura", "suporte", "capa", "friso", "presilha"];
+
+function sanitizeLike(term: string): string {
+  return term.replace(/[%_\\\[\]]/g, "").trim();
+}
 
 function getPriorityScore(partName: string, queryLower: string): number {
   const nameLower = partName.toLowerCase();
   
-  if (SECONDARY_PREFIXES.some(prefix => nameLower.startsWith(prefix))) {
+  if (SECONDARY_PREFIXES.some((prefix) => nameLower.startsWith(prefix))) {
     return 10;
   }
   if (nameLower === queryLower) {
@@ -86,31 +79,14 @@ export async function GET(req: NextRequest) {
     const db = await getDb();
     let rawCandidates: string[] = [];
     const isVehicleSelected = Boolean(versionId || modelName || brandName);
-
-    // Condição SQL para rejeitar marcas concorrentes se uma montadora foi selecionada
-    const conflictingBrands = brandName && brandName.length >= 3
-      ? ALL_CAR_BRANDS.filter((b) => b !== brandName && !brandName.includes(b))
-      : [];
-
-    const brandNotLikeConditions = conflictingBrands.map(
-      (cb) => notLike(schema.masterParts.name, `%${cb}%`)
-    );
+    const safeQ = sanitizeLike(q);
 
     // -------------------------------------------------------------
     // CASO 1: Versão Específica Selecionada (versionId != "" && != "all")
+    // Query SQL limpa e parametrizada (sem sobrecarga de LIKE/NOT LIKE)
     // -------------------------------------------------------------
     if (versionId && versionId !== "all") {
       try {
-        const whereConditions = [
-          eq(schema.partCompatibility.versionId, versionId),
-          or(
-            like(schema.masterParts.name, `%${q}%`),
-            like(schema.masterParts.name, `%${q.toLowerCase()}%`),
-            like(schema.masterParts.name, `%${q.toUpperCase()}%`)
-          ),
-          ...brandNotLikeConditions
-        ];
-
         const compatMatches = await db
           .select({ name: schema.masterParts.name })
           .from(schema.masterParts)
@@ -118,8 +94,13 @@ export async function GET(req: NextRequest) {
             schema.partCompatibility,
             eq(schema.masterParts.id, schema.partCompatibility.partId)
           )
-          .where(and(...whereConditions))
-          .limit(40);
+          .where(
+            and(
+              eq(schema.partCompatibility.versionId, versionId),
+              like(schema.masterParts.name, `%${safeQ}%`)
+            )
+          )
+          .limit(50);
 
         rawCandidates = compatMatches.map((m) => m.name);
       } catch (e) {
@@ -131,17 +112,13 @@ export async function GET(req: NextRequest) {
     // -------------------------------------------------------------
     else if (modelName || brandName) {
       try {
+        const safeModel = sanitizeLike(modelName);
         const whereConditions: any[] = [
-          or(
-            like(schema.masterParts.name, `%${q}%`),
-            like(schema.masterParts.name, `%${q.toLowerCase()}%`),
-            like(schema.masterParts.name, `%${q.toUpperCase()}%`)
-          ),
-          ...brandNotLikeConditions
+          like(schema.masterParts.name, `%${safeQ}%`)
         ];
 
-        if (modelName) {
-          whereConditions.push(like(schema.carModels.name, `%${modelName}%`));
+        if (safeModel) {
+          whereConditions.push(like(schema.carModels.name, `%${safeModel}%`));
         }
         if (year) {
           whereConditions.push(eq(schema.carVersions.year, parseInt(year, 10)));
@@ -163,7 +140,7 @@ export async function GET(req: NextRequest) {
             eq(schema.carVersions.modelId, schema.carModels.id)
           )
           .where(and(...whereConditions))
-          .limit(40);
+          .limit(50);
 
         rawCandidates = modelMatches.map((m) => m.name);
       } catch (e) {
@@ -179,27 +156,35 @@ export async function GET(req: NextRequest) {
           name: schema.masterParts.name,
         })
         .from(schema.masterParts)
-        .where(
-          or(
-            like(schema.masterParts.name, `%${q}%`),
-            like(schema.masterParts.name, `%${q.toLowerCase()}%`),
-            like(schema.masterParts.name, `%${q.toUpperCase()}%`)
-          )
-        )
+        .where(like(schema.masterParts.name, `%${safeQ}%`))
         .limit(60);
 
       rawCandidates = matches.map((m) => m.name);
     }
 
-    // REGRA CRÍTICA DE BLINDAGEM:
-    // Se o veículo foi selecionado e NENHUMA peça compatível foi encontrada na tabela de compatividades,
-    // É PROIBIDO fazer fallback para a tabela inteira (masterParts). DEVE RETORNAR LISTA VAZIA!
+    // REGRA DE BLINDAGEM: Se o veículo foi selecionado e NENHUMA peça compatível foi encontrada na tabela, retorna lista vazia
     if (isVehicleSelected && rawCandidates.length === 0) {
       return NextResponse.json({ parts: [] });
     }
 
-    // Injeta peças mestre essenciais apenas se houver candidatos válidos ou busca livre
+    // -------------------------------------------------------------
+    // FILTRAGEM EM MEMÓRIA NA CAMADA DE APLICAÇÃO (TYPESCRIPT WORKER)
+    // Evita o erro D1_ERROR: LIKE or GLOB pattern too complex
+    // -------------------------------------------------------------
     const queryLower = q.toLowerCase();
+
+    // 1. Filtra Marcas Concorrentes Conflitantes em Memória
+    if (brandName && brandName.length >= 3) {
+      const otherBrands = CONFLICTING_BRANDS.filter(
+        (b) => b !== brandName && !brandName.includes(b)
+      );
+      rawCandidates = rawCandidates.filter((name) => {
+        const lowerName = name.toLowerCase();
+        return !otherBrands.some((ob) => lowerName.includes(ob));
+      });
+    }
+
+    // Injeta peças mestre essenciais apenas se houver busca livre
     if (!isVehicleSelected && ESSENTIAL_MASTER_PARTS[queryLower]) {
       for (const essential of ESSENTIAL_MASTER_PARTS[queryLower]) {
         if (!rawCandidates.includes(essential)) {
@@ -215,26 +200,21 @@ export async function GET(req: NextRequest) {
     for (const raw of rawCandidates) {
       const lowerRaw = raw.toLowerCase();
 
-      // 1. REJEITAR AROMATIZANTES / PERFUMES EM BUSCAS AUTOMOTIVAS (Especialmente busca por "ar")
+      // 2. Rejeitar aromatizantes / químicos em buscas automotivas (especialmente por "ar")
       if (isArSearch || AROMA_KEYWORDS.some((akw) => lowerRaw.includes(akw))) {
         if (AROMA_KEYWORDS.some((akw) => lowerRaw.includes(akw))) {
-          continue; // Pula aromatizantes, gel, cheirinho, essências
+          continue;
         }
       }
 
-      // 2. REJEITAR PEÇAS DE MOTO SE ABA FOR CARRO OU ELÉTRICO
+      // 3. Rejeitar peças de moto se for segmento carro ou elétrico
       if (isCarSegment) {
         if (MOTORCYCLE_BRANDS_MODELS.some((m) => lowerRaw.includes(m))) {
           continue;
         }
       }
 
-      // 3. REJEITAR MARCAS CONCORRENTES CONFLITANTES
-      if (conflictingBrands.some((cb) => lowerRaw.includes(cb))) {
-        continue;
-      }
-
-      // 4. SANEAR E HIGIENIZAR O NOME CANÔNICO (Remove sufixos de lado e contaminações)
+      // 4. Sanear nome canônico
       const clean = cleanMasterPartTitle(raw);
       if (!clean || clean.length < 3) continue;
 
@@ -244,7 +224,7 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    // Ordenar do maior score para o menor (Peças Principais no Topo, Acabamentos no Final)
+    // Ordenar por relevância
     baseCleaned.sort((a, b) => b.score - a.score);
 
     const finalSuggestions: string[] = baseCleaned.map((item) => item.clean);
