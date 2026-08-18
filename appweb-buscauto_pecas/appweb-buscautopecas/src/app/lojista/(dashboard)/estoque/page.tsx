@@ -61,6 +61,8 @@ export default function LojistaEstoque() {
   const [loadingVersions, setLoadingVersions] = useState(false);
   const [existingCompat, setExistingCompat] = useState<string[]>([]);
   const [loadingExistingCompat, setLoadingExistingCompat] = useState(false);
+  const [aiPendingYears, setAiPendingYears] = useState<string[]>([]);
+  const [aiPendingEngine, setAiPendingEngine] = useState("");
 
   // Debounce for search
   const debounceRef = useRef<NodeJS.Timeout>();
@@ -110,7 +112,7 @@ export default function LojistaEstoque() {
     })();
   }, [selectedBrand]);
 
-  // Carrega versões
+  // Carrega versões e auto-seleciona versões detectadas pela IA
   useEffect(() => {
     setVersions([]);
     setSelectedYear("");
@@ -120,14 +122,37 @@ export default function LojistaEstoque() {
       try {
         const res = await fetch(`/api/fipe/versions?modelId=${selectedModel}`);
         const result = await res.json();
-        setVersions(result.data ?? []);
+        const fetchedVersions: any[] = result.data ?? [];
+        setVersions(fetchedVersions);
+
+        // Auto-seleção inteligente via IA se houver anos ou motorização detectados
+        if (aiPendingYears.length > 0 && fetchedVersions.length > 0) {
+          const autoIds = fetchedVersions
+            .filter((v) => {
+              const matchesYear = aiPendingYears.includes(String(v.year));
+              if (!matchesYear) return false;
+              if (aiPendingEngine) {
+                const versionName = (v.versionName || v.name || "").toUpperCase();
+                const vEngine = (v.engine || "").toUpperCase();
+                return versionName.includes(aiPendingEngine) || vEngine.includes(aiPendingEngine);
+              }
+              return true;
+            })
+            .map((v) => v.id);
+
+          if (autoIds.length > 0) {
+            setSelectedVersions(autoIds);
+          }
+          setAiPendingYears([]);
+          setAiPendingEngine("");
+        }
       } catch {
         setVersions([]);
       } finally {
         setLoadingVersions(false);
       }
     })();
-  }, [selectedModel]);
+  }, [selectedModel, aiPendingYears, aiPendingEngine]);
 
   useEffect(() => {
     fetchOffers();
@@ -308,7 +333,7 @@ export default function LojistaEstoque() {
         });
         setManufacturerName(data.extractedData.fabricante || "Original");
 
-        // Pre-select Montadora, Modelo and Ano if identified by AI!
+        // Pre-select Montadora, Modelo e Anos se identificados pela IA!
         if (data.extractedData.brandId) {
           setSelectedBrand(data.extractedData.brandId);
         }
@@ -317,6 +342,12 @@ export default function LojistaEstoque() {
         }
         if (data.extractedData.ano) {
           setSelectedYear(data.extractedData.ano);
+        }
+        if (Array.isArray(data.extractedData.anos) && data.extractedData.anos.length > 0) {
+          setAiPendingYears(data.extractedData.anos);
+        }
+        if (data.extractedData.motor) {
+          setAiPendingEngine(data.extractedData.motor);
         }
 
         setStep(1);
@@ -470,8 +501,8 @@ export default function LojistaEstoque() {
       {/* Modal Definição de Preço e Compatibilidade (2 Etapas) */}
       {selectedPart && (
         <div className="fixed inset-0 bg-slate-900/50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full overflow-hidden">
-            <div className="p-6 border-b border-slate-100 bg-slate-50 flex justify-between items-center">
+          <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] flex flex-col overflow-hidden">
+            <div className="p-6 border-b border-slate-100 bg-slate-50 flex justify-between items-center shrink-0">
               <div>
                 <h3 className="text-lg font-bold text-slate-900">
                   {step === 1 ? "1. Anunciar Peça" : "2. Veículos Compatíveis"}
@@ -485,7 +516,7 @@ export default function LojistaEstoque() {
             </div>
             
             {step === 1 ? (
-              <form onSubmit={handleNextStep} className="p-6 space-y-4">
+              <form onSubmit={handleNextStep} className="p-6 flex-1 overflow-y-auto pr-2 space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">Fabricante / Marca da Peça</label>
                   <input 
@@ -586,7 +617,7 @@ export default function LojistaEstoque() {
                   )}
                 </div>
 
-                <div className="pt-4 flex gap-3 justify-end border-t mt-6">
+                <div className="sticky bottom-0 bg-white pt-4 border-t mt-4 flex justify-end gap-3 z-10 shrink-0">
                   <button 
                     type="button" 
                     onClick={() => {
@@ -599,207 +630,209 @@ export default function LojistaEstoque() {
                   </button>
                   <button 
                     type="submit" 
-                    className="px-4 py-2 bg-orange-600 text-white rounded-lg font-medium hover:bg-orange-700 transition-colors flex items-center"
+                    className="px-4 py-2 bg-orange-600 text-white rounded-lg font-medium hover:bg-orange-700 transition-colors flex items-center shadow-md"
                   >
                     Avançar
                   </button>
                 </div>
               </form>
             ) : (
-              <form onSubmit={handleFinalizeOffer} className="p-6 space-y-4">
-                <p className="text-sm text-slate-600 mb-4">
-                  Selecione todos os veículos (montadora, modelo e anos) que são compatíveis com esta peça.
-                </p>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Veículo</label>
-                    <select 
-                      value={segment} 
-                      onChange={(e) => setSegment(e.target.value as any)}
-                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 text-sm bg-white"
-                    >
-                      <option value="CARRO">Carros</option>
-                      <option value="MOTO">Motos</option>
-                      <option value="ELETRICO">Elétricos</option>
-                      <option value="AUTOPROPELIDO">Autopropelido</option>
-                    </select>
+              <form onSubmit={handleFinalizeOffer} className="p-6 flex-1 overflow-y-auto pr-2 space-y-4 flex flex-col justify-between">
+                <div>
+                  <p className="text-sm text-slate-600 mb-4">
+                    Selecione todos os veículos (montadora, modelo e anos) que são compatíveis com esta peça.
+                  </p>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-1">Veículo</label>
+                      <select 
+                        value={segment} 
+                        onChange={(e) => setSegment(e.target.value as any)}
+                        className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 text-sm bg-white"
+                      >
+                        <option value="CARRO">Carros</option>
+                        <option value="MOTO">Motos</option>
+                        <option value="ELETRICO">Elétricos</option>
+                        <option value="AUTOPROPELIDO">Autopropelido</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-1">Montadora</label>
+                      <select 
+                        value={selectedBrand} 
+                        onChange={(e) => setSelectedBrand(e.target.value)}
+                        disabled={loadingBrands || brands.length === 0}
+                        className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 text-sm bg-white disabled:bg-slate-100 disabled:opacity-75"
+                      >
+                        <option value="">{loadingBrands ? "Carregando..." : "Selecione..."}</option>
+                        {brands.map(b => (
+                          <option key={b.id} value={b.id}>{b.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-1">Modelo</label>
+                      <select 
+                        value={selectedModel} 
+                        onChange={(e) => setSelectedModel(e.target.value)}
+                        disabled={!selectedBrand || loadingModels || models.length === 0}
+                        className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 text-sm bg-white disabled:bg-slate-100 disabled:opacity-75"
+                      >
+                        <option value="">{loadingModels ? "Carregando..." : "Selecione..."}</option>
+                        {models.map(m => (
+                          <option key={m.id} value={m.id}>{m.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-1">Filtro de Ano</label>
+                      <select 
+                        value={selectedYear} 
+                        onChange={(e) => setSelectedYear(e.target.value)}
+                        disabled={!selectedModel || loadingVersions || versions.length === 0}
+                        className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 text-sm bg-white disabled:bg-slate-100 disabled:opacity-75 font-medium"
+                      >
+                        <option value="">Todos os Anos</option>
+                        {Array.from(new Set(versions.map(v => v.year))).sort((a: any, b: any) => b - a).map(yr => (
+                          <option key={yr} value={String(yr)}>Ano {yr}</option>
+                        ))}
+                      </select>
+                    </div>
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Montadora</label>
-                    <select 
-                      value={selectedBrand} 
-                      onChange={(e) => setSelectedBrand(e.target.value)}
-                      disabled={loadingBrands || brands.length === 0}
-                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 text-sm bg-white disabled:bg-slate-100 disabled:opacity-75"
-                    >
-                      <option value="">{loadingBrands ? "Carregando..." : "Selecione..."}</option>
-                      {brands.map(b => (
-                        <option key={b.id} value={b.id}>{b.name}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Modelo</label>
-                    <select 
-                      value={selectedModel} 
-                      onChange={(e) => setSelectedModel(e.target.value)}
-                      disabled={!selectedBrand || loadingModels || models.length === 0}
-                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 text-sm bg-white disabled:bg-slate-100 disabled:opacity-75"
-                    >
-                      <option value="">{loadingModels ? "Carregando..." : "Selecione..."}</option>
-                      {models.map(m => (
-                        <option key={m.id} value={m.id}>{m.name}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Filtro de Ano</label>
-                    <select 
-                      value={selectedYear} 
-                      onChange={(e) => setSelectedYear(e.target.value)}
-                      disabled={!selectedModel || loadingVersions || versions.length === 0}
-                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 text-sm bg-white disabled:bg-slate-100 disabled:opacity-75 font-medium"
-                    >
-                      <option value="">Todos os Anos</option>
-                      {Array.from(new Set(versions.map(v => v.year))).sort((a: any, b: any) => b - a).map(yr => (
-                        <option key={yr} value={String(yr)}>Ano {yr}</option>
-                      ))}
-                    </select>
-                  </div>
+
+                  {/* Bloco de Seleção Rápida por Múltiplos Anos */}
+                  {selectedModel && versions.length > 0 && (
+                    <div className="bg-slate-50 p-3 rounded-lg border border-slate-200 mt-3">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+                          Clique no Ano para Marcar/Desmarcar todas as versões de uma vez:
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setSelectedYear("")}
+                          className={`text-xs px-2 py-0.5 rounded font-medium ${!selectedYear ? 'bg-orange-600 text-white' : 'bg-white border text-slate-700'}`}
+                        >
+                          Ver Todos os Anos
+                        </button>
+                      </div>
+                      <div className="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto p-1">
+                        {Array.from(new Set(versions.map(v => v.year))).sort((a: any, b: any) => b - a).map(yr => {
+                          const yearVersions = versions.filter(v => v.year === yr);
+                          const allYearSelected = yearVersions.length > 0 && yearVersions.every(v => selectedVersions.includes(v.id));
+                          const someYearSelected = yearVersions.some(v => selectedVersions.includes(v.id));
+
+                          return (
+                            <button
+                              key={yr}
+                              type="button"
+                              onClick={() => {
+                                const yearIds = yearVersions.map(v => v.id);
+                                if (allYearSelected) {
+                                  setSelectedVersions(prev => prev.filter(id => !yearIds.includes(id)));
+                                } else {
+                                  setSelectedVersions(prev => Array.from(new Set([...prev, ...yearIds])));
+                                }
+                                setSelectedYear(String(yr));
+                              }}
+                              className={`px-3 py-1 text-xs rounded-full border font-semibold transition-all flex items-center gap-1.5 shadow-sm ${
+                                allYearSelected 
+                                  ? 'bg-orange-600 text-white border-orange-700' 
+                                  : someYearSelected
+                                  ? 'bg-orange-100 text-orange-800 border-orange-300'
+                                  : selectedYear === String(yr)
+                                  ? 'bg-blue-600 text-white border-blue-700'
+                                  : 'bg-white text-slate-700 border-slate-300 hover:border-orange-400 hover:bg-orange-50'
+                              }`}
+                            >
+                              <span>Ano {yr}</span>
+                              <span className={`text-[10px] px-1.5 py-0.2 rounded-full ${allYearSelected ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600'}`}>
+                                {yearVersions.length}
+                              </span>
+                              {allYearSelected && <span>✓</span>}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {selectedModel && (() => {
+                    const filteredVersions = selectedYear 
+                      ? versions.filter(v => String(v.year) === selectedYear)
+                      : versions;
+                    const allFilteredSelected = filteredVersions.length > 0 && filteredVersions.every(v => selectedVersions.includes(v.id));
+
+                    const toggleAllFiltered = () => {
+                      const filteredIds = filteredVersions.map(v => v.id);
+                      if (allFilteredSelected) {
+                        setSelectedVersions(prev => prev.filter(id => !filteredIds.includes(id)));
+                      } else {
+                        setSelectedVersions(prev => Array.from(new Set([...prev, ...filteredIds])));
+                      }
+                    };
+
+                    return (
+                      <div className="mt-4 border border-slate-200 rounded-lg overflow-hidden">
+                        <div className="bg-slate-50 px-4 py-2.5 border-b border-slate-200 flex justify-between items-center flex-wrap gap-2">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-semibold text-slate-800">Versões Disponíveis</span>
+                            {selectedYear && (
+                              <span className="text-xs bg-blue-100 text-blue-800 font-medium px-2 py-0.5 rounded-full border border-blue-200">
+                                Ano {selectedYear}
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-3">
+                            {filteredVersions.length > 0 && (
+                              <button
+                                type="button"
+                                onClick={toggleAllFiltered}
+                                className="text-xs text-orange-600 font-medium hover:text-orange-800 transition-colors"
+                              >
+                                {allFilteredSelected ? "Desmarcar exibidos" : "Marcar todos exibidos"}
+                              </button>
+                            )}
+                            <span className="text-xs text-orange-600 font-medium bg-orange-100 px-2.5 py-1 rounded-full">
+                              {selectedVersions.length} selecionados
+                            </span>
+                          </div>
+                        </div>
+                        <div className="p-4 max-h-56 overflow-y-auto grid grid-cols-1 sm:grid-cols-2 gap-2.5 bg-white">
+                          {loadingVersions ? (
+                            <div className="col-span-full py-4 text-center">
+                              <Loader2 className="w-5 h-5 mx-auto animate-spin text-orange-500" />
+                            </div>
+                          ) : filteredVersions.length > 0 ? (
+                            filteredVersions.map(v => (
+                              <label key={v.id} className="flex items-center justify-between p-2.5 rounded-lg hover:bg-orange-50 cursor-pointer border border-slate-200 bg-white transition-all shadow-sm hover:border-orange-200">
+                                <div className="flex items-center gap-3 min-w-0 pr-2">
+                                  <input 
+                                    type="checkbox" 
+                                    checked={selectedVersions.includes(v.id)}
+                                    onChange={() => toggleVersion(v.id)}
+                                    className="w-4 h-4 text-orange-600 rounded border-slate-300 focus:ring-orange-500 flex-shrink-0"
+                                  />
+                                  <span className="text-sm font-medium text-slate-800 truncate">
+                                    {v.versionName || v.name}
+                                  </span>
+                                </div>
+                                <span className="text-xs font-semibold px-2 py-0.5 rounded bg-slate-100 text-slate-600 border border-slate-200 flex-shrink-0">
+                                  {v.year}
+                                </span>
+                              </label>
+                            ))
+                          ) : (
+                            <div className="col-span-full text-center text-sm text-slate-500 py-4">
+                              Nenhuma versão encontrada para o ano selecionado.
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })()}
                 </div>
 
-                {/* Bloco de Seleção Rápida por Múltiplos Anos */}
-                {selectedModel && versions.length > 0 && (
-                  <div className="bg-slate-50 p-3 rounded-lg border border-slate-200 mt-3">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-xs font-bold text-slate-700 uppercase tracking-wider">
-                        Clique no Ano para Marcar/Desmarcar todas as versões de uma vez:
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => setSelectedYear("")}
-                        className={`text-xs px-2 py-0.5 rounded font-medium ${!selectedYear ? 'bg-orange-600 text-white' : 'bg-white border text-slate-700'}`}
-                      >
-                        Ver Todos os Anos
-                      </button>
-                    </div>
-                    <div className="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto p-1">
-                      {Array.from(new Set(versions.map(v => v.year))).sort((a: any, b: any) => b - a).map(yr => {
-                        const yearVersions = versions.filter(v => v.year === yr);
-                        const allYearSelected = yearVersions.length > 0 && yearVersions.every(v => selectedVersions.includes(v.id));
-                        const someYearSelected = yearVersions.some(v => selectedVersions.includes(v.id));
-
-                        return (
-                          <button
-                            key={yr}
-                            type="button"
-                            onClick={() => {
-                              const yearIds = yearVersions.map(v => v.id);
-                              if (allYearSelected) {
-                                setSelectedVersions(prev => prev.filter(id => !yearIds.includes(id)));
-                              } else {
-                                setSelectedVersions(prev => Array.from(new Set([...prev, ...yearIds])));
-                              }
-                              setSelectedYear(String(yr));
-                            }}
-                            className={`px-3 py-1 text-xs rounded-full border font-semibold transition-all flex items-center gap-1.5 shadow-sm ${
-                              allYearSelected 
-                                ? 'bg-orange-600 text-white border-orange-700' 
-                                : someYearSelected
-                                ? 'bg-orange-100 text-orange-800 border-orange-300'
-                                : selectedYear === String(yr)
-                                ? 'bg-blue-600 text-white border-blue-700'
-                                : 'bg-white text-slate-700 border-slate-300 hover:border-orange-400 hover:bg-orange-50'
-                            }`}
-                          >
-                            <span>Ano {yr}</span>
-                            <span className={`text-[10px] px-1.5 py-0.2 rounded-full ${allYearSelected ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600'}`}>
-                              {yearVersions.length}
-                            </span>
-                            {allYearSelected && <span>✓</span>}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-
-                {selectedModel && (() => {
-                  const filteredVersions = selectedYear 
-                    ? versions.filter(v => String(v.year) === selectedYear)
-                    : versions;
-                  const allFilteredSelected = filteredVersions.length > 0 && filteredVersions.every(v => selectedVersions.includes(v.id));
-
-                  const toggleAllFiltered = () => {
-                    const filteredIds = filteredVersions.map(v => v.id);
-                    if (allFilteredSelected) {
-                      setSelectedVersions(prev => prev.filter(id => !filteredIds.includes(id)));
-                    } else {
-                      setSelectedVersions(prev => Array.from(new Set([...prev, ...filteredIds])));
-                    }
-                  };
-
-                  return (
-                    <div className="mt-6 border border-slate-200 rounded-lg overflow-hidden">
-                      <div className="bg-slate-50 px-4 py-2.5 border-b border-slate-200 flex justify-between items-center flex-wrap gap-2">
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm font-semibold text-slate-800">Versões Disponíveis</span>
-                          {selectedYear && (
-                            <span className="text-xs bg-blue-100 text-blue-800 font-medium px-2 py-0.5 rounded-full border border-blue-200">
-                              Ano {selectedYear}
-                            </span>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-3">
-                          {filteredVersions.length > 0 && (
-                            <button
-                              type="button"
-                              onClick={toggleAllFiltered}
-                              className="text-xs text-orange-600 font-medium hover:text-orange-800 transition-colors"
-                            >
-                              {allFilteredSelected ? "Desmarcar exibidos" : "Marcar todos exibidos"}
-                            </button>
-                          )}
-                          <span className="text-xs text-orange-600 font-medium bg-orange-100 px-2.5 py-1 rounded-full">
-                            {selectedVersions.length} selecionados
-                          </span>
-                        </div>
-                      </div>
-                      <div className="p-4 max-h-60 overflow-y-auto grid grid-cols-1 sm:grid-cols-2 gap-2.5 bg-white">
-                        {loadingVersions ? (
-                          <div className="col-span-full py-4 text-center">
-                            <Loader2 className="w-5 h-5 mx-auto animate-spin text-orange-500" />
-                          </div>
-                        ) : filteredVersions.length > 0 ? (
-                          filteredVersions.map(v => (
-                            <label key={v.id} className="flex items-center justify-between p-2.5 rounded-lg hover:bg-orange-50 cursor-pointer border border-slate-200 bg-white transition-all shadow-sm hover:border-orange-200">
-                              <div className="flex items-center gap-3 min-w-0 pr-2">
-                                <input 
-                                  type="checkbox" 
-                                  checked={selectedVersions.includes(v.id)}
-                                  onChange={() => toggleVersion(v.id)}
-                                  className="w-4 h-4 text-orange-600 rounded border-slate-300 focus:ring-orange-500 flex-shrink-0"
-                                />
-                                <span className="text-sm font-medium text-slate-800 truncate">
-                                  {v.versionName || v.name}
-                                </span>
-                              </div>
-                              <span className="text-xs font-semibold px-2 py-0.5 rounded bg-slate-100 text-slate-600 border border-slate-200 flex-shrink-0">
-                                {v.year}
-                              </span>
-                            </label>
-                          ))
-                        ) : (
-                          <div className="col-span-full text-center text-sm text-slate-500 py-4">
-                            Nenhuma versão encontrada para o ano selecionado.
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })()}
-
-                <div className="pt-4 flex gap-3 justify-end border-t mt-6">
+                <div className="sticky bottom-0 bg-white pt-4 border-t mt-4 flex justify-end gap-3 z-10 shrink-0">
                   <button 
                     type="button" 
                     onClick={() => setStep(1)}
@@ -810,7 +843,7 @@ export default function LojistaEstoque() {
                   <button 
                     type="submit" 
                     disabled={saving || selectedVersions.length === 0}
-                    className="px-4 py-2 bg-orange-600 text-white rounded-lg font-medium hover:bg-orange-700 transition-colors disabled:opacity-50 flex items-center"
+                    className="px-4 py-2 bg-orange-600 text-white rounded-lg font-medium hover:bg-orange-700 transition-colors disabled:opacity-50 flex items-center shadow-md"
                   >
                     {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                     Confirmar Anúncio

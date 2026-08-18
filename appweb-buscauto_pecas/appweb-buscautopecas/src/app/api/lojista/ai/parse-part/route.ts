@@ -1,3 +1,4 @@
+// src/app/api/lojista/ai/parse-part/route.ts — AI Parser com Detecção de Intervalo de Anos e Motorização
 import { NextRequest, NextResponse } from "next/server";
 import { getDb, schema } from "@/db";
 import { getSession } from "@/lib/auth-edge";
@@ -7,6 +8,7 @@ export const runtime = "edge";
 
 // Dict of common part names and typos for instant clean standardization
 const PART_DICTIONARY: { pattern: RegExp; cleanName: string }[] = [
+  { pattern: /virabrequim/i, cleanName: "Virabrequim do Motor" },
   { pattern: /para\s*brisa|parabrisas?/i, cleanName: "Para-brisa Dianteiro" },
   { pattern: /farol\s*(dianteiro)?\s*direit[oa]/i, cleanName: "Farol Dianteiro Direito" },
   { pattern: /farol\s*(dianteiro)?\s*esquerd[oa]/i, cleanName: "Farol Dianteiro Esquerdo" },
@@ -79,7 +81,6 @@ export async function POST(req: NextRequest) {
     }
 
     if (!nomeDaPeca) {
-      // Fallback: Strip years and known car models/brands
       let cleaned = rawText.replace(/\b(19\d{2}|20\d{2})\b/g, "");
       KNOWN_BRANDS.forEach((b) => b.search.forEach((s) => (cleaned = cleaned.replace(new RegExp(`\\b${s}\\b`, "gi"), ""))));
       KNOWN_MODELS.forEach((m) => m.search.forEach((s) => (cleaned = cleaned.replace(new RegExp(`\\b${s}\\b`, "gi"), ""))));
@@ -87,7 +88,7 @@ export async function POST(req: NextRequest) {
       nomeDaPeca = cleaned ? cleaned.charAt(0).toUpperCase() + cleaned.slice(1) : "Peça Automotiva";
     }
 
-    // 2. Extract brand, model, year
+    // 2. Extract brand, model, year range, engine
     let extractedBrand = "";
     for (const b of KNOWN_BRANDS) {
       if (b.search.some((s) => textLower.includes(s))) {
@@ -104,8 +105,44 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    const yearMatch = rawText.match(/\b(19\d{2}|20\d{2})\b/);
-    const extractedYear = yearMatch ? yearMatch[1] : "";
+    // Extract year range e.g. "2017 a 2020", "2017-2020", "2017 a 20", "2017 2020"
+    const extractedYears: string[] = [];
+    const yearRangeMatch = rawText.match(/\b(19\d{2}|20\d{2})\s*(?:a|-|até|\/)\s*(19\d{2}|20\d{2}|\d{2})\b/i);
+
+    if (yearRangeMatch) {
+      const startYear = parseInt(yearRangeMatch[1], 10);
+      let endYearStr = yearRangeMatch[2];
+      if (endYearStr.length === 2) {
+        endYearStr = yearRangeMatch[1].substring(0, 2) + endYearStr;
+      }
+      const endYear = parseInt(endYearStr, 10);
+      if (!isNaN(startYear) && !isNaN(endYear) && endYear >= startYear && endYear - startYear <= 30) {
+        for (let y = startYear; y <= endYear; y++) {
+          extractedYears.push(String(y));
+        }
+      }
+    }
+
+    if (extractedYears.length === 0) {
+      const allYears = Array.from(rawText.matchAll(/\b(19\d{2}|20\d{2})\b/g)).map((m) => m[1]);
+      if (allYears.length >= 2) {
+        const start = Math.min(...allYears.map(Number));
+        const end = Math.max(...allYears.map(Number));
+        if (end - start <= 20) {
+          for (let y = start; y <= end; y++) {
+            extractedYears.push(String(y));
+          }
+        }
+      } else if (allYears.length === 1) {
+        extractedYears.push(allYears[0]);
+      }
+    }
+
+    const extractedYear = extractedYears[0] || "";
+
+    // Extract engine motor (e.g. "2.0", "1.5", "1.6", "1.8", "1.0", "1.4", "2.4", "v6")
+    const engineMatch = rawText.match(/\b(1\.0|1\.4|1\.5|1\.6|1\.8|2\.0|2\.4|3\.0|v6|turbo)\b/i);
+    const extractedEngine = engineMatch ? engineMatch[1].toUpperCase() : "";
 
     // 3. Database Lookup for D1 brandId & modelId
     let brandId = "";
@@ -150,9 +187,8 @@ export async function POST(req: NextRequest) {
       partId = masterSearch[0].id;
       nomeDaPeca = masterSearch[0].name;
     } else {
-      // Create clean master part
       const catRows = await db.select({ id: schema.categories.id }).from(schema.categories).limit(1);
-      let categoryId = catRows[0]?.id || "c-1";
+      let categoryId = catRows[0]?.id || "cat-motor";
 
       const code = `IA-${crypto.randomUUID().substring(0, 8).toUpperCase()}`;
       partId = crypto.randomUUID();
@@ -177,6 +213,8 @@ export async function POST(req: NextRequest) {
         montadora: extractedBrand,
         modelo: extractedModel,
         ano: extractedYear,
+        anos: extractedYears,
+        motor: extractedEngine,
         brandId,
         modelId,
       },
