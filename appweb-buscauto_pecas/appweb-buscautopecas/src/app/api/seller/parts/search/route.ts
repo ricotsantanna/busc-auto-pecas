@@ -1,9 +1,11 @@
-// src/app/api/seller/parts/search/route.ts — Busca de Peças Canônicas com Desduplicação e Normalização de Fabricante
+// src/app/api/seller/parts/search/route.ts — Busca de Peças Canônicas com Tokenização de Palavra-Chave Principal e Filtro em Memória
 import { NextRequest, NextResponse } from "next/server";
 import { getDb, schema } from "@/db";
 import { like, eq } from "drizzle-orm";
 
 export const runtime = "edge";
+
+const STOP_WORDS = new Set(["de", "do", "da", "dos", "das", "para", "com", "sem", "em", "um", "uma", "o", "a", "os", "as"]);
 
 // Marcas de montadoras/veículos conhecidas para normalizar como 'Original / Genuíno'
 const AUTOMAKER_BRANDS = [
@@ -12,8 +14,15 @@ const AUTOMAKER_BRANDS = [
   "iveco", "scania", "volvo", "bmw", "mercedes", "mercedes-benz", "audi", "chery", "byd", "haval", "mitsubishi"
 ];
 
-function sanitizeLike(term: string): string {
-  return term.replace(/[%_\\\[\]]/g, "").trim();
+function getPrimaryKeyword(q: string): { primaryKeyword: string; allWords: string[] } {
+  const words = q
+    .trim()
+    .replace(/[%_\\\[\]]/g, "")
+    .split(/\s+/)
+    .filter((w) => w.length > 2 && !STOP_WORDS.has(w.toLowerCase()));
+
+  const primaryKeyword = words[0] || q.trim().replace(/[%_\\\[\]]/g, "");
+  return { primaryKeyword, allWords: words };
 }
 
 function normalizeManufacturer(m: string | null | undefined): string {
@@ -36,9 +45,9 @@ export async function GET(req: NextRequest) {
 
   try {
     const db = await getDb();
-    const safeQ = sanitizeLike(q);
+    const { primaryKeyword, allWords } = getPrimaryKeyword(q);
 
-    // Consulta SQL no D1 agrupando por nome para desduplicação
+    // Query D1 usando 1 ÚNICA PALAVRA-CHAVE PRINCIPAL (impede estouro de limite LIKE do SQLite)
     const matches = await db
       .select({
         id: schema.masterParts.id,
@@ -50,11 +59,18 @@ export async function GET(req: NextRequest) {
       })
       .from(schema.masterParts)
       .leftJoin(schema.categories, eq(schema.masterParts.categoryId, schema.categories.id))
-      .where(like(schema.masterParts.name, `%${safeQ}%`))
+      .where(like(schema.masterParts.name, `%${primaryKeyword}%`))
       .groupBy(schema.masterParts.name)
-      .limit(30);
+      .limit(50);
 
-    // Desduplicação estrita por nome em memória e normalização do fabricante
+    // Refinamento e verificação de todas as palavras em memória TypeScript (sem sobrecarregar D1 SQL)
+    const filteredMatches = matches.filter((item) => {
+      if (allWords.length <= 1) return true;
+      const lowerName = item.name.toLowerCase();
+      // Confere se as palavras adicionais existem na peça
+      return allWords.slice(1).every((w) => lowerName.includes(w.toLowerCase()));
+    });
+
     const seenNames = new Set<string>();
     const uniqueParts: Array<{
       id: string;
@@ -66,7 +82,9 @@ export async function GET(req: NextRequest) {
       categoryName: string | null;
     }> = [];
 
-    for (const part of matches) {
+    const sourceList = filteredMatches.length > 0 ? filteredMatches : matches;
+
+    for (const part of sourceList) {
       const normalizedName = part.name.trim();
       const lowerKey = normalizedName.toLowerCase();
 

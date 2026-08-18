@@ -1,4 +1,4 @@
-// src/app/api/lojista/ai/parse-part/route.ts — AI Parser Canônico com Queries SQL Limpas no D1
+// src/app/api/lojista/ai/parse-part/route.ts — AI Parser Canônico com Busca Exata e Tokenização para D1
 import { NextRequest, NextResponse } from "next/server";
 import { getDb, schema } from "@/db";
 import { getSession } from "@/lib/auth-edge";
@@ -199,7 +199,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // 6. Resolução de brandId e modelId no D1 via queries SQL diretas e simples
+    // 6. Resolução de brandId e modelId no D1 via queries SQL simples
     let brandId = "";
     let modelId = "";
 
@@ -233,31 +233,46 @@ export async function POST(req: NextRequest) {
     }
 
     // 7. Busca ou Criação da Peça Mestre Canônica em master_parts
+    // Tenta primeiro igualdade exata eq() para evitar qualquer LIKE longo
     let masterPartId = "";
-    const safeCleanName = sanitizeLike(cleanPartName);
-    const masterSearch = await db
+    const exactSearch = await db
       .select({ id: schema.masterParts.id, name: schema.masterParts.name, manufacturer: schema.masterParts.manufacturer })
       .from(schema.masterParts)
-      .where(like(schema.masterParts.name, `%${safeCleanName}%`))
+      .where(eq(schema.masterParts.name, cleanPartName))
       .limit(1);
 
-    if (masterSearch[0]) {
-      masterPartId = masterSearch[0].id;
-      cleanPartName = masterSearch[0].name;
+    if (exactSearch[0]) {
+      masterPartId = exactSearch[0].id;
+      cleanPartName = exactSearch[0].name;
     } else {
-      const catRows = await db.select({ id: schema.categories.id }).from(schema.categories).limit(1);
-      const categoryId = catRows[0]?.id || "cat-carroceria";
+      // Se não houver igualdade exata, busca no D1 apenas pela PRIMEIRA PALAVRA PRINCIPAL do nome limpo
+      const safeCleanName = sanitizeLike(cleanPartName);
+      const firstWord = safeCleanName.split(/\s+/).filter((w) => w.length > 2)[0] || safeCleanName;
 
-      masterPartId = `mp-${cleanPartName.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
+      const masterSearch = await db
+        .select({ id: schema.masterParts.id, name: schema.masterParts.name, manufacturer: schema.masterParts.manufacturer })
+        .from(schema.masterParts)
+        .where(like(schema.masterParts.name, `%${firstWord}%`))
+        .limit(1);
 
-      await db.insert(schema.masterParts).values({
-        id: masterPartId,
-        name: cleanPartName,
-        manufacturer: "Original",
-        manufacturerCode: `IA-${masterPartId.substring(3, 11).toUpperCase()}`,
-        categoryId,
-        description: `Extraído via IA de: "${rawText}"`,
-      }).onConflictDoNothing();
+      if (masterSearch[0]) {
+        masterPartId = masterSearch[0].id;
+        cleanPartName = masterSearch[0].name;
+      } else {
+        const catRows = await db.select({ id: schema.categories.id }).from(schema.categories).limit(1);
+        const categoryId = catRows[0]?.id || "cat-carroceria";
+
+        masterPartId = `mp-${cleanPartName.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
+
+        await db.insert(schema.masterParts).values({
+          id: masterPartId,
+          name: cleanPartName,
+          manufacturer: "Original",
+          manufacturerCode: `IA-${masterPartId.substring(3, 11).toUpperCase()}`,
+          categoryId,
+          description: `Extraído via IA de: "${rawText}"`,
+        }).onConflictDoNothing();
+      }
     }
 
     // 8. Resposta Estruturada no Formato JSON Solicitado

@@ -1,10 +1,12 @@
-// src/app/api/parts/search/route.ts — Autocomplete Contextual no D1 (Filtro em Memória sem Sobrepor SQLite)
+// src/app/api/parts/search/route.ts — Autocomplete Contextual com Tokenização de Palavra-Chave Principal
 import { NextRequest, NextResponse } from "next/server";
 import { getDb, schema } from "@/db";
 import { like, eq, and } from "drizzle-orm";
 import { cleanMasterPartTitle, MOTORCYCLE_BRANDS_MODELS } from "@/lib/part-sanitizer";
 
 export const runtime = "edge";
+
+const STOP_WORDS = new Set(["de", "do", "da", "dos", "das", "para", "com", "sem", "em", "um", "uma", "o", "a", "os", "as"]);
 
 // Marcas de veículos conhecidas para prevenção de contaminação cruzada de marca em memória
 const CONFLICTING_BRANDS = [
@@ -44,8 +46,15 @@ const ESSENTIAL_MASTER_PARTS: Record<string, string[]> = {
 // Prefixas de acessórios secundários
 const SECONDARY_PREFIXES = ["acabamento", "alojamento", "moldura", "suporte", "capa", "friso", "presilha"];
 
-function sanitizeLike(term: string): string {
-  return term.replace(/[%_\\\[\]]/g, "").trim();
+function getPrimaryKeyword(q: string): { primaryKeyword: string; allWords: string[] } {
+  const words = q
+    .trim()
+    .replace(/[%_\\\[\]]/g, "")
+    .split(/\s+/)
+    .filter((w) => w.length > 2 && !STOP_WORDS.has(w.toLowerCase()));
+
+  const primaryKeyword = words[0] || q.trim().replace(/[%_\\\[\]]/g, "");
+  return { primaryKeyword, allWords: words };
 }
 
 function getPriorityScore(partName: string, queryLower: string): number {
@@ -79,11 +88,11 @@ export async function GET(req: NextRequest) {
     const db = await getDb();
     let rawCandidates: string[] = [];
     const isVehicleSelected = Boolean(versionId || modelName || brandName);
-    const safeQ = sanitizeLike(q);
+    const { primaryKeyword, allWords } = getPrimaryKeyword(q);
 
     // -------------------------------------------------------------
     // CASO 1: Versão Específica Selecionada (versionId != "" && != "all")
-    // Query SQL limpa e parametrizada (sem sobrecarga de LIKE/NOT LIKE)
+    // Consulta 1 única palavra-chave no D1 SQL para evitar estouro do LIKE
     // -------------------------------------------------------------
     if (versionId && versionId !== "all") {
       try {
@@ -97,7 +106,7 @@ export async function GET(req: NextRequest) {
           .where(
             and(
               eq(schema.partCompatibility.versionId, versionId),
-              like(schema.masterParts.name, `%${safeQ}%`)
+              like(schema.masterParts.name, `%${primaryKeyword}%`)
             )
           )
           .limit(50);
@@ -112,9 +121,9 @@ export async function GET(req: NextRequest) {
     // -------------------------------------------------------------
     else if (modelName || brandName) {
       try {
-        const safeModel = sanitizeLike(modelName);
+        const safeModel = modelName.replace(/[%_\\\[\]]/g, "").trim();
         const whereConditions: any[] = [
-          like(schema.masterParts.name, `%${safeQ}%`)
+          like(schema.masterParts.name, `%${primaryKeyword}%`)
         ];
 
         if (safeModel) {
@@ -156,7 +165,7 @@ export async function GET(req: NextRequest) {
           name: schema.masterParts.name,
         })
         .from(schema.masterParts)
-        .where(like(schema.masterParts.name, `%${safeQ}%`))
+        .where(like(schema.masterParts.name, `%${primaryKeyword}%`))
         .limit(60);
 
       rawCandidates = matches.map((m) => m.name);
@@ -168,12 +177,23 @@ export async function GET(req: NextRequest) {
     }
 
     // -------------------------------------------------------------
-    // FILTRAGEM EM MEMÓRIA NA CAMADA DE APLICAÇÃO (TYPESCRIPT WORKER)
-    // Evita o erro D1_ERROR: LIKE or GLOB pattern too complex
+    // REFINAMENTO DE RELEVÂNCIA E FILTRAGEM EM MEMÓRIA TYPESCRIPT
     // -------------------------------------------------------------
     const queryLower = q.toLowerCase();
 
-    // 1. Filtra Marcas Concorrentes Conflitantes em Memória
+    // 1. Filtragem de termos adicionais em memória se houver mais palavras
+    if (allWords.length > 1) {
+      const extraWords = allWords.slice(1).map((w) => w.toLowerCase());
+      const matchedExtra = rawCandidates.filter((name) => {
+        const lowerName = name.toLowerCase();
+        return extraWords.every((w) => lowerName.includes(w));
+      });
+      if (matchedExtra.length > 0) {
+        rawCandidates = matchedExtra;
+      }
+    }
+
+    // 2. Filtra Marcas Concorrentes Conflitantes em Memória
     if (brandName && brandName.length >= 3) {
       const otherBrands = CONFLICTING_BRANDS.filter(
         (b) => b !== brandName && !brandName.includes(b)
@@ -200,21 +220,21 @@ export async function GET(req: NextRequest) {
     for (const raw of rawCandidates) {
       const lowerRaw = raw.toLowerCase();
 
-      // 2. Rejeitar aromatizantes / químicos em buscas automotivas (especialmente por "ar")
+      // 3. Rejeitar aromatizantes / químicos em buscas automotivas
       if (isArSearch || AROMA_KEYWORDS.some((akw) => lowerRaw.includes(akw))) {
         if (AROMA_KEYWORDS.some((akw) => lowerRaw.includes(akw))) {
           continue;
         }
       }
 
-      // 3. Rejeitar peças de moto se for segmento carro ou elétrico
+      // 4. Rejeitar peças de moto se for segmento carro ou elétrico
       if (isCarSegment) {
         if (MOTORCYCLE_BRANDS_MODELS.some((m) => lowerRaw.includes(m))) {
           continue;
         }
       }
 
-      // 4. Sanear nome canônico
+      // 5. Sanear nome canônico
       const clean = cleanMasterPartTitle(raw);
       if (!clean || clean.length < 3) continue;
 
