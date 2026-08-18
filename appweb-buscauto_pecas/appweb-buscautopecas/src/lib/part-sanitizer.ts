@@ -28,12 +28,13 @@ const MODEL_NOISE = [
   "A3", "A4", "A5", "Q3", "Q5", "320I", "325I", "528I", "X1", "X3", "X5"
 ];
 
-// Termos de posição e lados
+// Termos de posição e lados para remoção das sugestões de autocomplete
 const SIDE_NOISE = [
-  "LADO DIREITO", "LADO ESQUERDO", "L/D", "L/E", "L.D.", "L.E.", "LD", "LE", "LH", "RH"
+  "LADO DIREITO", "LADO ESQUERDO", "L/D", "L/E", "L.D.", "L.E.", "LD", "LE", "LH", "RH",
+  "PASSAGEIRO", "MOTORISTA", "DIREITO", "ESQUERDO", "PAR / AMBOS OS LADOS", "AMBOS OS LADOS"
 ];
 
-// Marcas/Modelos de motos para filtragem cruzada de segmento (garante que motos não vazem para carros)
+// Marcas/Modelos de motos para filtragem cruzada de segmento
 export const MOTORCYCLE_BRANDS_MODELS = [
   "yamaha", "factor", "fazer", "ybr", "xtz", "xt660", "lander", "crosser", "nmax", "xmax",
   "titan", "fan", "bros", "biz", "twister", "cbx", "cb300", "xre", "falcon", "cg125", "cg150", "cg160", "cg",
@@ -61,7 +62,7 @@ export function cleanMasterPartTitle(rawName: string): string {
     clean = clean.replace(regex, "");
   }
 
-  // Remove indicações de lado e posição
+  // Remove indicações de lado e posição do título da sugestão
   for (const s of SIDE_NOISE) {
     const regex = new RegExp(`\\b${s}\\b`, "gi");
     clean = clean.replace(regex, "");
@@ -70,7 +71,17 @@ export function cleanMasterPartTitle(rawName: string): string {
   // Remove códigos de ano isolados no final (ex: 00, 06, 14, 09-11)
   clean = clean.replace(/\b\d{2}(?:-\d{2})?\b$/g, "");
 
-  // Padronizações frequentes
+  // Padronizações Canônicas de Mercado Automotivo (Unificação de Nomenclatura)
+  clean = clean.replace(/\bLanterna de Freio\b/gi, "Lanterna Traseira");
+  clean = clean.replace(/\bLanterna Freio\b/gi, "Lanterna Traseira");
+  clean = clean.replace(/\bLanterna Seta Traseira\b/gi, "Lanterna Traseira");
+  clean = clean.replace(/\bLanterna de Seta do Retrovisor \/ Paralama\b/gi, "Lanterna de Seta do Retrovisor");
+  clean = clean.replace(/\bLanterna Seta Retrovisor\b/gi, "Lanterna de Seta do Retrovisor");
+  clean = clean.replace(/\bBreak Light\b/gi, "Brake Light (Luz de Freio)");
+  clean = clean.replace(/\bBrake-Light\b/gi, "Brake Light (Luz de Freio)");
+  clean = clean.replace(/\bLuz de Freio Elevada\b/gi, "Brake Light (Luz de Freio)");
+  clean = clean.replace(/\bLuz Freio Elevada\b/gi, "Brake Light (Luz de Freio)");
+
   clean = clean.replace(/\bAutomático Partida\b/gi, "Automático de Partida");
   clean = clean.replace(/\bMotor Partida\b/gi, "Motor de Partida");
   clean = clean.replace(/\bPastilha Freio\b/gi, "Pastilha de Freio");
@@ -81,8 +92,9 @@ export function cleanMasterPartTitle(rawName: string): string {
   clean = clean.replace(/\bVela Ignicao\b/gi, "Vela de Ignição");
   clean = clean.replace(/\bVelas Ignicao\b/gi, "Velas de Ignição");
 
-  // Limpa hífens soltos, barras e múltiplos espaços
+  // Limpa hífens soltos, parênteses vazios, barras e múltiplos espaços
   clean = clean
+    .replace(/\(\s*\)/g, "")
     .replace(/\s+-\s+/g, " ")
     .replace(/[/\\-]$/g, "")
     .replace(/^[/\\-]\s*/g, "")

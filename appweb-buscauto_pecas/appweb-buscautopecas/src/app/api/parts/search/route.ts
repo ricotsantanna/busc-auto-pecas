@@ -1,7 +1,7 @@
-// src/app/api/parts/search/route.ts — Autocomplete Contextualizado com Validação de Veículo e Segmento
+// src/app/api/parts/search/route.ts — Autocomplete Canônico Contextualizado sem Duplicação de Lados
 import { NextRequest, NextResponse } from "next/server";
 import { getDb, schema } from "@/db";
-import { like, or, eq, and } from "drizzle-orm";
+import { like, or, eq, and, sql } from "drizzle-orm";
 import { cleanMasterPartTitle, MOTORCYCLE_BRANDS_MODELS } from "@/lib/part-sanitizer";
 
 export const runtime = "edge";
@@ -12,20 +12,17 @@ const CAR_BRANDS = [
   "toyota", "honda", "hyundai", "nissan", "jeep", "bmw", "audi", "mercedes", "volvo", "scania", "mitsubishi", "chery", "byd"
 ];
 
-// Peças de carros que possuem variações de lado/posição
-const SIDE_SENSITIVE_KEYWORDS = [
-  "farol", "lanterna", "retrovisor", "paralama", "porta", "amortecedor", "pastilha", "disco",
-  "espelho", "macaneta", "maçaneta", "bojo", "pisca", "seta", "vidro", "suporte", "palheta"
-];
-
-// Dicionário de Peças Mestre Essenciais Principais para injeção e priorização no topo
+// Dicionário Canônico de Peças Mestre Essenciais Principais para injeção e priorização no topo
 const ESSENTIAL_MASTER_PARTS: Record<string, string[]> = {
   far: ["Farol", "Farol Principal", "Farol de Milha", "Farol Auxiliar", "Farol de Neblina"],
   faro: ["Farol", "Farol Principal", "Farol de Milha", "Farol Auxiliar", "Farol de Neblina"],
   farol: ["Farol", "Farol Principal", "Farol de Milha", "Farol Auxiliar", "Farol de Neblina"],
-  lant: ["Lanterna", "Lanterna Traseira", "Lanterna de Seta / Pisca", "Lanterna de Freio"],
-  lante: ["Lanterna", "Lanterna Traseira", "Lanterna de Seta / Pisca"],
-  lanterna: ["Lanterna", "Lanterna Traseira", "Lanterna de Seta / Pisca"],
+  lant: ["Lanterna Traseira", "Lanterna de Seta do Retrovisor", "Lanterna de Placa"],
+  lante: ["Lanterna Traseira", "Lanterna de Seta do Retrovisor"],
+  lanterna: ["Lanterna Traseira", "Lanterna de Seta do Retrovisor"],
+  brake: ["Brake Light (Luz de Freio)"],
+  break: ["Brake Light (Luz de Freio)"],
+  luz: ["Brake Light (Luz de Freio)", "Luz de Placa"],
   retro: ["Retrovisor", "Retrovisor Elétrico", "Retrovisor Manual"],
   retrov: ["Retrovisor", "Retrovisor Elétrico", "Retrovisor Manual"],
   retrovisor: ["Retrovisor", "Retrovisor Elétrico", "Retrovisor Manual"],
@@ -60,17 +57,17 @@ function getPriorityScore(partName: string, queryLower: string): number {
     return 10;
   }
   
-  // Se for exato igual à busca (ex: Farol, Vela de Ignição) -> Score Máximo
+  // Se for exato igual à busca (ex: Farol, Lanterna Traseira) -> Score Máximo
   if (nameLower === queryLower) {
     return 100;
   }
 
-  // Se a peça principal começa com a busca (ex: Farol Principal, Vela de Ignição) -> Score Alto
+  // Se a peça principal começa com a busca -> Score Alto
   if (nameLower.startsWith(queryLower)) {
     return 90;
   }
 
-  // Se a peça começa com substantivo mestre limpo -> Score Médio
+  // Se a peça contém o termo da busca -> Score Médio
   return 50;
 }
 
@@ -90,8 +87,8 @@ export async function GET(req: NextRequest) {
     const db = await getDb();
     let rawCandidates: string[] = [];
 
-    // Se temos versionId do veículo selecionado, busca compatibilidade direta primeiro
-    if (versionId) {
+    // 1. QUERY RELACIONAL D1: Busca por Versão Específica
+    if (versionId && versionId !== "all") {
       try {
         const compatMatches = await db
           .select({ name: schema.masterParts.name })
@@ -114,11 +111,47 @@ export async function GET(req: NextRequest) {
 
         rawCandidates = compatMatches.map((m) => m.name);
       } catch (e) {
-        console.warn("Compat query fallback to masterParts:", e);
+        console.warn("Compat query fallback:", e);
+      }
+    }
+    // 2. QUERY RELACIONAL D1: Busca Ampla por Modelo e Ano (quando versão for 'Todas as versões' ou vazia)
+    else if (modelName) {
+      try {
+        const modelMatches = await db
+          .select({ name: schema.masterParts.name })
+          .from(schema.masterParts)
+          .innerJoin(
+            schema.partCompatibility,
+            eq(schema.masterParts.id, schema.partCompatibility.partId)
+          )
+          .innerJoin(
+            schema.carVersions,
+            eq(schema.partCompatibility.versionId, schema.carVersions.id)
+          )
+          .innerJoin(
+            schema.carModels,
+            eq(schema.carVersions.modelId, schema.carModels.id)
+          )
+          .where(
+            and(
+              like(schema.carModels.name, `%${modelName}%`),
+              year ? eq(schema.carVersions.year, parseInt(year, 10)) : sql`1=1`,
+              or(
+                like(schema.masterParts.name, `%${q}%`),
+                like(schema.masterParts.name, `%${q.toLowerCase()}%`),
+                like(schema.masterParts.name, `%${q.toUpperCase()}%`)
+              )
+            )
+          )
+          .limit(40);
+
+        rawCandidates = modelMatches.map((m) => m.name);
+      } catch (e) {
+        console.warn("Model wide search fallback:", e);
       }
     }
 
-    // Se a busca por compatibilidade não retornou dados suficientes, busca no catálogo mestre de peças
+    // 3. Fallback para catálogo mestre geral caso precise de mais candidatos
     if (rawCandidates.length < 5) {
       const matches = await db
         .select({
@@ -154,28 +187,27 @@ export async function GET(req: NextRequest) {
     for (const raw of rawCandidates) {
       const lowerRaw = raw.toLowerCase();
 
-      // 1. REJEITAR PEÇAS DE MOTO SE O SEGMENTO ATIVO FOR CARRO/ELÉTRICO
+      // REJEITAR PEÇAS DE MOTO SE ABA FOR CARRO OU ELÉTRICO
       if (isCarSegment) {
         if (MOTORCYCLE_BRANDS_MODELS.some((m) => lowerRaw.includes(m))) {
           continue;
         }
       }
 
-      // 2. REJEITAR CONTAMINAÇÃO CRUZADA DE MARCAS DIFERENTES DA SELECIONADA
+      // REJEITAR CONTAMINAÇÃO CRUZADA DE MARCAS DIFERENTES DA SELECIONADA
       if (brandName && brandName.length >= 3) {
-        // Se o usuário selecionou Hyundai, rejeita marcas como Honda, Toyota, Fiat, VW, Ford, etc.
         const conflictingBrands = CAR_BRANDS.filter((b) => b !== brandName && !brandName.includes(b));
         if (conflictingBrands.some((cb) => lowerRaw.includes(cb))) {
           continue;
         }
       }
 
-      // 3. Saneamento e Higienização do Título
+      // Saneamento e Higienização Canônica do Título (Remove sufixos de lado L/D, L/E, Passageiro...)
       const clean = cleanMasterPartTitle(raw);
       if (!clean || clean.length < 3) continue;
 
       const score = getPriorityScore(clean, queryLower);
-      if (!baseCleaned.some(item => item.clean === clean)) {
+      if (!baseCleaned.some((item) => item.clean === clean)) {
         baseCleaned.push({ clean, score });
       }
     }
@@ -183,30 +215,10 @@ export async function GET(req: NextRequest) {
     // Ordenar do maior score para o menor (Peças Principais no Topo, Acabamentos no Final)
     baseCleaned.sort((a, b) => b.score - a.score);
 
-    const finalSuggestions: string[] = [];
+    // Retorna apenas títulos canônicos limpos e únicos (sem sufixos concatenados)
+    const finalSuggestions: string[] = baseCleaned.map((item) => item.clean);
 
-    for (const item of baseCleaned) {
-      const clean = item.clean;
-      const lowerClean = clean.toLowerCase();
-      const isSideSensitive = SIDE_SENSITIVE_KEYWORDS.some((kw) => lowerClean.includes(kw));
-
-      if (isCarSegment && isSideSensitive) {
-        // Se for peça de carro com variação de lado, gera as sugestões completas
-        const rightVariant = `${clean} - Lado Direito (Passageiro)`;
-        const leftVariant = `${clean} - Lado Esquerdo (Motorista)`;
-        const pairVariant = `${clean} (Par / Ambos os Lados)`;
-
-        if (!finalSuggestions.includes(rightVariant)) finalSuggestions.push(rightVariant);
-        if (!finalSuggestions.includes(leftVariant)) finalSuggestions.push(leftVariant);
-        if (!finalSuggestions.includes(pairVariant)) finalSuggestions.push(pairVariant);
-      } else {
-        if (!finalSuggestions.includes(clean)) {
-          finalSuggestions.push(clean);
-        }
-      }
-    }
-
-    return NextResponse.json({ parts: finalSuggestions.slice(0, 12) });
+    return NextResponse.json({ parts: Array.from(new Set(finalSuggestions)).slice(0, 12) });
   } catch (error) {
     console.error("Public part search error:", error);
     return NextResponse.json({ parts: [] });
