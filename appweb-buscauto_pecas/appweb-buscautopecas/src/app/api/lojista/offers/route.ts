@@ -1,5 +1,6 @@
+// src/app/api/lojista/offers/route.ts — Cadastro e Listagem de Ofertas de Lojista com Taxonomia Canônica
 import { NextRequest, NextResponse } from "next/server";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, and } from "drizzle-orm";
 import { withDbOrMock, schema } from "@/db";
 import { getSession } from "@/lib/auth-edge";
 
@@ -12,7 +13,6 @@ async function getAuthContext() {
 
   const companyId = session.companyId;
 
-  // For phase 1, we just get the first store of the company
   const storeId = session.storeId || await withDbOrMock(
     async (db) => {
       const stores = await db.select().from(schema.stores).where(eq(schema.stores.companyId, companyId)).limit(1);
@@ -37,18 +37,22 @@ export async function GET(req: NextRequest) {
           .select({
             id: schema.storeOffers.id,
             price: schema.storeOffers.price,
-            stockQuantity: schema.storeOffers.stockQuantity,
+            inStock: schema.storeOffers.inStock,
             condition: schema.storeOffers.condition,
+            notes: schema.storeOffers.notes,
             createdAt: schema.storeOffers.createdAt,
             part: {
               id: schema.masterParts.id,
               name: schema.masterParts.name,
               manufacturer: schema.masterParts.manufacturer,
-              partNumber: schema.masterParts.partNumber,
+              manufacturerCode: schema.masterParts.manufacturerCode,
+              position: schema.masterParts.position,
+              categoryName: schema.categories.name,
             }
           })
           .from(schema.storeOffers)
           .innerJoin(schema.masterParts, eq(schema.storeOffers.partId, schema.masterParts.id))
+          .leftJoin(schema.categories, eq(schema.masterParts.categoryId, schema.categories.id))
           .where(eq(schema.storeOffers.storeId, storeId))
           .orderBy(desc(schema.storeOffers.createdAt));
       },
@@ -61,46 +65,84 @@ export async function GET(req: NextRequest) {
   }
 }
 
-// Lojista adds a new offer
+// Lojista adds a new offer linked to canonical master_parts
 export async function POST(req: NextRequest) {
   try {
     const { storeId } = await getAuthContext();
-    const { partId, price, stockQuantity, condition } = await req.json();
+    const {
+      partId,
+      price,
+      quantity = 1,
+      condition = "NOVO",
+      notes,
+      versionIds = []
+    } = await req.json();
 
     if (!partId || price === undefined) {
-      return NextResponse.json({ error: "Dados incompletos" }, { status: 400 });
+      return NextResponse.json({ error: "Campos obrigatórios ausentes: partId e preço são necessários." }, { status: 400 });
     }
 
     const offerId = crypto.randomUUID();
 
     await withDbOrMock(
       async (db) => {
-        // Check if offer already exists for this part/store
+        // Verifica se a loja já possui oferta para esta peça e mesma condição
         const existing = await db
           .select()
           .from(schema.storeOffers)
-          .where(eq(schema.storeOffers.storeId, storeId))
-          .where(eq(schema.storeOffers.partId, partId))
+          .where(
+            and(
+              eq(schema.storeOffers.storeId, storeId),
+              eq(schema.storeOffers.partId, partId),
+              eq(schema.storeOffers.condition, condition)
+            )
+          )
           .limit(1);
 
         if (existing.length > 0) {
-          throw new Error("Você já possui uma oferta para esta peça.");
+          // Atualiza oferta existente
+          await db
+            .update(schema.storeOffers)
+            .set({
+              price: Number(price),
+              inStock: Number(quantity) > 0,
+              notes: notes || null,
+              updatedAt: new Date(),
+            })
+            .where(eq(schema.storeOffers.id, existing[0].id));
+          return;
         }
 
+        // Insere nova oferta do lojista
         await db.insert(schema.storeOffers).values({
           id: offerId,
           storeId,
           partId,
-          price: price.toString(),
-          stockQuantity: stockQuantity || 1, // Default 1 if not specified
-          condition: condition || "NOVA",
+          price: Number(price),
+          inStock: Number(quantity) > 0,
+          condition: condition === "USADO" ? "USADO" : "NOVO",
+          notes: notes || null,
         });
+
+        // Vincula versões compatíveis na tabela part_compatibility se enviadas
+        if (Array.isArray(versionIds) && versionIds.length > 0) {
+          const compatEntries = versionIds.map((vId: string) => ({
+            partId,
+            versionId: vId,
+          }));
+          try {
+            await db.insert(schema.partCompatibility).values(compatEntries);
+          } catch (e) {
+            console.warn("Compatibilidade já cadastrada:", e);
+          }
+        }
       },
       () => {}
     );
 
-    return NextResponse.json({ success: true, offerId });
+    return NextResponse.json({ success: true, message: "Oferta cadastrada com sucesso!", offerId });
   } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.error("Save offer error:", error);
+    return NextResponse.json({ error: error.message || "Erro ao salvar oferta" }, { status: 500 });
   }
 }

@@ -1,6 +1,7 @@
+// src/app/api/seller/parts/search/route.ts — Busca de Peças Canônicas para Cadastro do Lojista
 import { NextRequest, NextResponse } from "next/server";
 import { getDb, schema } from "@/db";
-import { like, or, desc, eq } from "drizzle-orm";
+import { like, or, eq } from "drizzle-orm";
 
 export const runtime = "edge";
 
@@ -17,7 +18,9 @@ export async function GET(req: NextRequest) {
       .select({
         id: schema.masterParts.id,
         name: schema.masterParts.name,
+        manufacturer: schema.masterParts.manufacturer,
         manufacturerCode: schema.masterParts.manufacturerCode,
+        position: schema.masterParts.position,
         categoryName: schema.categories.name,
       })
       .from(schema.masterParts)
@@ -33,7 +36,7 @@ export async function GET(req: NextRequest) {
     
     return NextResponse.json({ parts: matches });
   } catch (error) {
-    console.error("Seller part search error:", error);
+    console.error("Seller canonical part search error:", error);
     return NextResponse.json({ parts: [] });
   }
 }
