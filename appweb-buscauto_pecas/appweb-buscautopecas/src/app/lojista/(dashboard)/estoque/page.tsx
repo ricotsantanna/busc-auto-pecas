@@ -204,9 +204,21 @@ export default function LojistaEstoque() {
 
     debounceRef.current = setTimeout(async () => {
       try {
-        const res = await fetch(`/api/seller/parts/search?q=${encodeURIComponent(text)}`);
-        const data = await res.json();
-        setSuggestions(data.parts || []);
+        let res = await fetch(`/api/seller/parts/search?q=${encodeURIComponent(text)}`);
+        let data = await res.json();
+        let partsList = data.parts || [];
+
+        // Se digitou frase longa (ex: 'grade frontal hyunday creta') e veio 0 resultados, tenta buscar pelas 2 primeiras palavras (ex: 'grade frontal')
+        if (partsList.length === 0 && text.trim().includes(" ")) {
+          const firstTwoWords = text.trim().split(/\s+/).slice(0, 2).join(" ");
+          if (firstTwoWords.length >= 2) {
+            const fallbackRes = await fetch(`/api/seller/parts/search?q=${encodeURIComponent(firstTwoWords)}`);
+            const fallbackData = await fallbackRes.json();
+            partsList = fallbackData.parts || [];
+          }
+        }
+
+        setSuggestions(partsList);
       } catch (e) {
         console.error(e);
       } finally {
@@ -325,28 +337,34 @@ export default function LojistaEstoque() {
       if (res.ok) {
         setIsAiModalOpen(false);
         setAiRawText("");
+        const cleanName = data.cleanPartName || data.extractedData?.nomeDaPeca || "Peça Automotiva";
+        const mPartId = data.masterPartId || data.partId || `mp-${cleanName.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
+        
         setSelectedPart({
-          id: data.partId,
-          name: data.extractedData.nomeDaPeca,
-          manufacturer: data.extractedData.fabricante || "Original",
-          partNumber: data.extractedData.codigoPeca,
+          id: mPartId,
+          name: cleanName,
+          manufacturer: data.extractedData?.fabricante || "Original",
+          partNumber: data.extractedData?.codigoPeca || `IA-${mPartId.substring(0, 8).toUpperCase()}`,
         });
-        setManufacturerName(data.extractedData.fabricante || "Original");
+        setManufacturerName(data.extractedData?.fabricante || "Original");
+        setSidePosition(data.sidePosition || data.extractedData?.sidePosition || "NENHUM");
 
         // Pre-select Montadora, Modelo e Anos se identificados pela IA!
-        if (data.extractedData.brandId) {
-          setSelectedBrand(data.extractedData.brandId);
+        if (data.brandId || data.extractedData?.brandId) {
+          setSelectedBrand(data.brandId || data.extractedData?.brandId);
         }
-        if (data.extractedData.modelId) {
-          setSelectedModel(data.extractedData.modelId);
+        if (data.modelId || data.extractedData?.modelId) {
+          setSelectedModel(data.modelId || data.extractedData?.modelId);
         }
-        if (data.extractedData.ano) {
-          setSelectedYear(data.extractedData.ano);
+        if (data.yearStart || data.extractedData?.ano) {
+          setSelectedYear(String(data.yearStart || data.extractedData?.ano));
         }
-        if (Array.isArray(data.extractedData.anos) && data.extractedData.anos.length > 0) {
-          setAiPendingYears(data.extractedData.anos);
+
+        const yearsList = data.years ? data.years.map(String) : (data.extractedData?.anos || []);
+        if (Array.isArray(yearsList) && yearsList.length > 0) {
+          setAiPendingYears(yearsList);
         }
-        if (data.extractedData.motor) {
+        if (data.extractedData?.motor) {
           setAiPendingEngine(data.extractedData.motor);
         }
 
@@ -393,6 +411,23 @@ export default function LojistaEstoque() {
         {/* Dropdown de Sugestões */}
         {isDropdownOpen && query.length >= 2 && (
           <div className="absolute z-10 w-full mt-1 bg-white border border-slate-200 rounded-lg shadow-xl overflow-hidden max-h-80 overflow-y-auto">
+            {/* Opção Destacada de IA sempre no topo */}
+            <div 
+              onClick={requestAI}
+              className="p-3 bg-gradient-to-r from-slate-900 to-slate-800 text-white cursor-pointer flex justify-between items-center hover:from-slate-800 hover:to-slate-700 transition-all border-b border-slate-700"
+            >
+              <div className="flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-yellow-400 shrink-0 animate-pulse" />
+                <div>
+                  <p className="text-xs font-bold text-yellow-400 uppercase tracking-wider">Cadastrar via Inteligência Artificial</p>
+                  <p className="text-sm font-medium truncate max-w-md">Processar: "{query}"</p>
+                </div>
+              </div>
+              <span className="text-xs bg-yellow-400/20 text-yellow-300 font-semibold px-2 py-1 rounded border border-yellow-400/30">
+                Extrair Veículo e Peça →
+              </span>
+            </div>
+
             {suggestions.length > 0 ? (
               <ul className="divide-y divide-slate-100">
                 {suggestions.map((part) => (
@@ -414,17 +449,14 @@ export default function LojistaEstoque() {
                 {!searching && (
                   <div className="flex flex-col items-center">
                     <PackageX className="w-8 h-8 text-slate-400 mb-2" />
-                    <p className="text-sm text-slate-600">Peça não encontrada no Catálogo Mestre.</p>
+                    <p className="text-sm text-slate-600">Nenhum termo exato no Catálogo Mestre.</p>
                     <button 
                       onClick={requestAI}
-                      className="mt-4 inline-flex items-center px-4 py-2 bg-slate-900 text-white rounded-lg text-sm hover:bg-slate-800 transition-colors"
+                      className="mt-3 inline-flex items-center px-4 py-2 bg-orange-600 text-white rounded-lg text-sm font-medium hover:bg-orange-700 transition-colors shadow-sm"
                     >
-                      <Sparkles className="w-4 h-4 mr-2 text-yellow-400" />
-                      Solicitar Cadastro via IA
+                      <Sparkles className="w-4 h-4 mr-2 text-yellow-300" />
+                      Cadastrar Peça e Compatibilidade via IA
                     </button>
-                    <p className="text-xs text-slate-400 mt-2 max-w-sm mx-auto">
-                      Nossa Inteligência Artificial lerá seu texto e padronizará o anúncio para manter a busca limpa!
-                    </p>
                   </div>
                 )}
               </div>
