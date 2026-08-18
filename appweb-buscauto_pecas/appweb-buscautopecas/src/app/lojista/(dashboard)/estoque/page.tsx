@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Plus, Search, Filter, Loader2, PackageX, Sparkles, Car, ChevronDown, CheckCircle2, X } from "lucide-react";
+import { Plus, Search, Filter, Loader2, PackageX, Sparkles, Car, ChevronDown, CheckCircle2, X, Edit3, Trash2, PauseCircle, PlayCircle, AlertTriangle } from "lucide-react";
 
 export function groupCompatibilities(rawItems: string[]): string[] {
   if (!rawItems || rawItems.length === 0) return [];
@@ -171,6 +171,7 @@ type Offer = {
   id: string;
   price: string | number;
   stockQuantity: number;
+  inStock?: boolean;
   condition: string;
   createdAt: string;
   compatibilities?: string[];
@@ -180,6 +181,19 @@ type Offer = {
 export default function LojistaEstoque() {
   const [offers, setOffers] = useState<Offer[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Edit Offer Modal State
+  const [editingOffer, setEditingOffer] = useState<Offer | null>(null);
+  const [editPrice, setEditPrice] = useState("");
+  const [editQuantity, setEditQuantity] = useState("1");
+  const [editCondition, setEditCondition] = useState("NOVO");
+  const [editManufacturer, setEditManufacturer] = useState("");
+  const [editPartNumber, setEditPartNumber] = useState("");
+  const [savingEdit, setSavingEdit] = useState(false);
+
+  // Delete Offer Modal State
+  const [deletingOffer, setDeletingOffer] = useState<Offer | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   // Autocomplete state
   const [query, setQuery] = useState("");
@@ -537,6 +551,129 @@ export default function LojistaEstoque() {
     }
   };
 
+  // Modal de Edição de Oferta
+  const handleOpenEditModal = (offer: Offer) => {
+    setEditingOffer(offer);
+    setEditPrice(String(offer.price));
+    setEditQuantity(String(offer.stockQuantity !== undefined ? offer.stockQuantity : (offer.inStock !== false ? 1 : 0)));
+    setEditCondition(offer.condition || "NOVO");
+    setEditManufacturer(offer.part.manufacturer || "Original");
+    setEditPartNumber(offer.part.partNumber || "");
+  };
+
+  // Salvar Alterações na Oferta (PATCH)
+  const handleSaveEdit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingOffer) return;
+
+    setSavingEdit(true);
+    try {
+      const res = await fetch(`/api/lojista/offers/${editingOffer.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          price: parseFloat(editPrice),
+          stockQuantity: parseInt(editQuantity, 10),
+          inStock: parseInt(editQuantity, 10) > 0,
+          condition: editCondition,
+          manufacturer: editManufacturer,
+          partNumber: editPartNumber,
+        }),
+      });
+
+      if (res.ok) {
+        const newStockNum = parseInt(editQuantity, 10);
+        setOffers((prev) =>
+          prev.map((off) =>
+            off.id === editingOffer.id
+              ? {
+                  ...off,
+                  price: parseFloat(editPrice),
+                  stockQuantity: newStockNum,
+                  inStock: newStockNum > 0,
+                  condition: editCondition,
+                  part: {
+                    ...off.part,
+                    manufacturer: editManufacturer,
+                    partNumber: editPartNumber,
+                  },
+                }
+              : off
+          )
+        );
+        setEditingOffer(null);
+      } else {
+        const errData = await res.json();
+        alert(errData.error || "Erro ao salvar alterações na oferta.");
+      }
+    } catch (e) {
+      console.error(e);
+      alert("Erro de conexão ao salvar a oferta.");
+    } finally {
+      setSavingEdit(false);
+    }
+  };
+
+  // Alternar Status de Oferta (Pausado / Ativo)
+  const handleToggleStatus = async (offer: Offer) => {
+    const isCurrentlyPaused = offer.inStock === false || offer.stockQuantity === 0;
+    const nextInStock = isCurrentlyPaused ? true : false;
+    const nextQuantity = nextInStock ? (offer.stockQuantity > 0 ? offer.stockQuantity : 1) : 0;
+
+    // Atualização otimista na UI
+    setOffers((prev) =>
+      prev.map((off) =>
+        off.id === offer.id ? { ...off, inStock: nextInStock, stockQuantity: nextQuantity } : off
+      )
+    );
+
+    try {
+      const res = await fetch(`/api/lojista/offers/${offer.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ inStock: nextInStock, stockQuantity: nextQuantity }),
+      });
+
+      if (!res.ok) {
+        // Reverte se falhou
+        setOffers((prev) =>
+          prev.map((off) => (off.id === offer.id ? { ...off, inStock: offer.inStock, stockQuantity: offer.stockQuantity } : off))
+        );
+        alert("Erro ao alterar o status da oferta.");
+      }
+    } catch (e) {
+      console.error(e);
+      setOffers((prev) =>
+        prev.map((off) => (off.id === offer.id ? { ...off, inStock: offer.inStock, stockQuantity: offer.stockQuantity } : off))
+      );
+    }
+  };
+
+  // Excluir Oferta (DELETE)
+  const handleConfirmDelete = async () => {
+    if (!deletingOffer) return;
+
+    setDeleting(true);
+    try {
+      const res = await fetch(`/api/lojista/offers/${deletingOffer.id}`, {
+        method: "DELETE",
+      });
+
+      if (res.ok) {
+        setOffers((prev) => prev.filter((off) => off.id !== deletingOffer.id));
+        setDeletingOffer(null);
+      } else {
+        const errData = await res.json();
+        alert(errData.error || "Erro ao excluir a oferta.");
+      }
+    } catch (e) {
+      console.error(e);
+      alert("Erro de conexão ao excluir a oferta.");
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -646,26 +783,98 @@ export default function LojistaEstoque() {
                     <Loader2 className="w-6 h-6 animate-spin mx-auto text-orange-500" />
                   </td>
                 </tr>
-              ) : offers.map((offer) => (
-                <tr key={offer.id} className="hover:bg-slate-50 transition-colors">
-                  <td className="px-6 py-4 font-medium text-slate-900">{offer.part.name}</td>
-                  <td className="px-6 py-4">{offer.part.manufacturer} <span className="text-xs text-slate-400 block">{offer.part.partNumber}</span></td>
-                  <td className="px-6 py-4 max-w-xs">
-                    <CompatibilityCell compatibilities={offer.compatibilities || []} />
-                  </td>
-                  <td className="px-6 py-4 font-medium text-green-700">R$ {Number(offer.price).toFixed(2)}</td>
-                  <td className="px-6 py-4">
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-800">
-                      {offer.stockQuantity}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-xs font-medium">{offer.condition}</td>
-                  <td className="px-6 py-4 text-right space-x-3">
-                    <button className="text-orange-600 hover:text-orange-800 font-medium">Editar</button>
-                    <button className="text-red-600 hover:text-red-800 font-medium">Ocultar</button>
-                  </td>
-                </tr>
-              ))}
+              ) : offers.map((offer) => {
+                const isPaused = offer.inStock === false || (offer.stockQuantity !== undefined && offer.stockQuantity === 0);
+
+                return (
+                  <tr
+                    key={offer.id}
+                    className={`transition-colors ${
+                      isPaused ? "bg-amber-50/40 opacity-75 hover:bg-amber-50/70" : "hover:bg-slate-50"
+                    }`}
+                  >
+                    <td className="px-6 py-4 font-medium text-slate-900">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span>{offer.part.name}</span>
+                        {isPaused && (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-amber-100 text-amber-800 border border-amber-300">
+                            Pausado
+                          </span>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      {offer.part.manufacturer}{" "}
+                      <span className="text-xs text-slate-400 block">{offer.part.partNumber}</span>
+                    </td>
+                    <td className="px-6 py-4 max-w-xs">
+                      <CompatibilityCell compatibilities={offer.compatibilities || []} />
+                    </td>
+                    <td className="px-6 py-4 font-medium text-green-700">R$ {Number(offer.price).toFixed(2)}</td>
+                    <td className="px-6 py-4">
+                      <span
+                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                          isPaused ? "bg-amber-100 text-amber-900" : "bg-slate-100 text-slate-800"
+                        }`}
+                      >
+                        {offer.stockQuantity ?? (isPaused ? 0 : 1)}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-xs font-medium">
+                      <span
+                        className={`inline-block px-2 py-0.5 rounded text-[11px] font-semibold ${
+                          offer.condition === "NOVO"
+                            ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                            : "bg-blue-50 text-blue-700 border border-blue-200"
+                        }`}
+                      >
+                        {offer.condition || "NOVO"}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-right space-x-2 whitespace-nowrap">
+                      {/* Botão Editar */}
+                      <button
+                        onClick={() => handleOpenEditModal(offer)}
+                        className="inline-flex items-center px-2.5 py-1 text-xs font-semibold text-orange-700 bg-orange-50 hover:bg-orange-100 border border-orange-200 rounded-lg transition-colors cursor-pointer"
+                      >
+                        <Edit3 className="w-3.5 h-3.5 mr-1" />
+                        Editar
+                      </button>
+
+                      {/* Botão Ocultar / Ativar */}
+                      <button
+                        onClick={() => handleToggleStatus(offer)}
+                        className={`inline-flex items-center px-2.5 py-1 text-xs font-semibold border rounded-lg transition-colors cursor-pointer ${
+                          !isPaused
+                            ? "text-amber-700 bg-amber-50 hover:bg-amber-100 border-amber-200"
+                            : "text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border-emerald-200"
+                        }`}
+                      >
+                        {!isPaused ? (
+                          <>
+                            <PauseCircle className="w-3.5 h-3.5 mr-1" />
+                            Ocultar
+                          </>
+                        ) : (
+                          <>
+                            <PlayCircle className="w-3.5 h-3.5 mr-1" />
+                            Ativar
+                          </>
+                        )}
+                      </button>
+
+                      {/* Botão Excluir */}
+                      <button
+                        onClick={() => setDeletingOffer(offer)}
+                        className="inline-flex items-center px-2 py-1 text-xs font-semibold text-red-600 hover:text-red-700 hover:bg-red-50 border border-transparent hover:border-red-200 rounded-lg transition-colors cursor-pointer"
+                        title="Excluir Oferta"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
               {!loading && offers.length === 0 && (
                 <tr>
                   <td colSpan={7} className="px-6 py-8 text-center text-slate-500 flex flex-col items-center">
@@ -1080,6 +1289,150 @@ export default function LojistaEstoque() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+      {/* Modal de Edição de Oferta */}
+      {editingOffer && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-in fade-in duration-150">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden border border-slate-100">
+            <div className="p-6 border-b border-slate-100 bg-slate-50 flex justify-between items-center">
+              <div>
+                <h3 className="text-lg font-bold text-slate-900">Editar Oferta no Estoque</h3>
+                <p className="text-xs text-slate-500 mt-0.5 truncate max-w-xs">{editingOffer.part.name}</p>
+              </div>
+              <button
+                onClick={() => setEditingOffer(null)}
+                className="text-slate-400 hover:text-slate-600 rounded-lg p-1"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveEdit} className="p-6 space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
+                  Fabricante / Marca da Peça
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={editManufacturer}
+                  onChange={(e) => setEditManufacturer(e.target.value)}
+                  placeholder="ex: Bosch, Cobreq, Monroe, Original..."
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 font-medium text-sm"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
+                  Código do Fabricante / Código Interno
+                </label>
+                <input
+                  type="text"
+                  value={editPartNumber}
+                  onChange={(e) => setEditPartNumber(e.target.value)}
+                  placeholder="ex: N-1234, BOS-PAST-01..."
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 font-medium text-sm"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
+                    Preço (R$)
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    required
+                    min="0.01"
+                    value={editPrice}
+                    onChange={(e) => setEditPrice(e.target.value)}
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 font-semibold text-sm text-green-700"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
+                    Qtd. em Estoque
+                  </label>
+                  <input
+                    type="number"
+                    required
+                    min="0"
+                    value={editQuantity}
+                    onChange={(e) => setEditQuantity(e.target.value)}
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 font-semibold text-sm"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
+                  Condição do Item
+                </label>
+                <select
+                  value={editCondition}
+                  onChange={(e) => setEditCondition(e.target.value)}
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 bg-white font-medium text-sm"
+                >
+                  <option value="NOVO">Novo</option>
+                  <option value="USADO">Usado</option>
+                </select>
+              </div>
+
+              <div className="pt-4 border-t border-slate-100 flex justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setEditingOffer(null)}
+                  className="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={savingEdit}
+                  className="px-5 py-2 text-sm font-semibold text-white bg-orange-600 hover:bg-orange-700 rounded-lg transition-colors shadow-sm disabled:opacity-50 flex items-center gap-2"
+                >
+                  {savingEdit && <Loader2 className="w-4 h-4 animate-spin" />}
+                  Salvar Alterações
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Confirmação de Exclusão */}
+      {deletingOffer && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-in fade-in duration-150">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 border border-slate-100 text-center">
+            <div className="w-12 h-12 rounded-full bg-red-100 text-red-600 flex items-center justify-center mx-auto mb-4">
+              <AlertTriangle className="w-6 h-6" />
+            </div>
+            <h3 className="text-lg font-bold text-slate-900 mb-2">Excluir Oferta do Estoque</h3>
+            <p className="text-sm text-slate-600 mb-6">
+              Tem certeza que deseja excluir a oferta de <strong className="text-slate-900">{deletingOffer.part.name}</strong>? Esta ação é irreversível e o item deixará de aparecer nas pesquisas públicas.
+            </p>
+
+            <div className="flex justify-center gap-3">
+              <button
+                type="button"
+                onClick={() => setDeletingOffer(null)}
+                className="px-4 py-2.5 text-sm font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                disabled={deleting}
+                onClick={handleConfirmDelete}
+                className="px-5 py-2.5 text-sm font-semibold text-white bg-red-600 hover:bg-red-700 rounded-xl transition-colors shadow-sm disabled:opacity-50 flex items-center gap-2"
+              >
+                {deleting && <Loader2 className="w-4 h-4 animate-spin" />}
+                Sim, Excluir Oferta
+              </button>
+            </div>
           </div>
         </div>
       )}
